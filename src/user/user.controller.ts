@@ -20,8 +20,10 @@ import {
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { UserService } from './user.service';
-import { CreateUserDto, UpdateUserDto } from './user.dto';
+
 import { UserResponseDto } from './dto/user-response.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
+import { CreateUserDto } from './dto/create-user.dto';
 
 @ApiTags('Users')
 @Controller('users')
