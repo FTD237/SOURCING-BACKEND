@@ -35,6 +35,8 @@ export class EtudiantService {
     return this.etudiantRepo.save(etudiant);
   }
 
+  // async findByAttributes()
+
   async remove(id: number): Promise<void> {
     const etudiant = await this.findOne(id);
     etudiant.statut = 'supprime';

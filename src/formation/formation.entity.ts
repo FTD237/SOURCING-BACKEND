@@ -1,18 +1,30 @@
 // ─── formation.entity.ts ─────────────────────────────────────────────────────
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  Unique,
+} from 'typeorm';
+import { IsNotEmpty, IsString } from 'class-validator';
 
 @Entity('formation')
+@Unique('UQ_FORMATION_NOM', ['nom'])
 export class Formation {
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
+  @IsNotEmpty()
+  @IsString()
   @Column()
   nom: string;
 
-  @Column({ nullable: true })
+  @IsNotEmpty()
+  @Column()
   nbr_annee: number;
 
-  @Column({ nullable: true, unique: true })
+  @Column({ unique: true })
   code: string;
 
   @CreateDateColumn() dte_creation: Date;

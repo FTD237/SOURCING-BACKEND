@@ -20,19 +20,19 @@ export class FormationService {
     return this.formationRepo.find();
   }
 
-  async findOne(id: number): Promise<Formation> {
+  async findOne(id: string): Promise<Formation> {
     const formation = await this.formationRepo.findOne({ where: { id } });
     if (!formation) throw new NotFoundException(`Formation #${id} introuvable`);
     return formation;
   }
 
-  async update(id: number, dto: UpdateFormationDto): Promise<Formation> {
+  async update(id: string, dto: UpdateFormationDto): Promise<Formation> {
     const formation = await this.findOne(id);
     Object.assign(formation, dto);
     return this.formationRepo.save(formation);
   }
 
-  async remove(id: number): Promise<void> {
+  async remove(id: string): Promise<void> {
     const formation = await this.findOne(id);
     formation.statut = 'supprime';
     formation.dte_suppression = new Date();

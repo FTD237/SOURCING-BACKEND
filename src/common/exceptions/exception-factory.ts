@@ -8,15 +8,17 @@ import {
   InternalServerErrorException,
 } from '@nestjs/common';
 import { QueryFailedError } from 'typeorm';
+import {
+  isDuplicateKeyError,
+  extractDuplicateField,
+  isPostgresDuplicateError,
+  isMySQLDuplicateError,
+} from '../types/error.types';
 
-// Définir un type pour l'erreur de base de données
-interface DatabaseError extends Error {
-  code?: string;
-  driverError?: {
-    code?: string;
-    detail?: string;
-    table?: string;
-  };
+interface DuplicateErrorDetail {
+  field?: string;
+  value?: string;
+  message: string;
 }
 
 export class ExceptionFactory {
@@ -29,10 +31,24 @@ export class ExceptionFactory {
   }
 
   static duplicate(resource: string, field?: string, value?: string): never {
-    const message =
-      field && value
-        ? `${resource} avec ${field} "${value}" existe déjà`
-        : `${resource} existe déjà`;
+    let message: string;
+
+    if (field && value) {
+      message = `${resource} avec ${field} "${value}" existe déjà`;
+    } else if (field) {
+      message = `${resource} avec ce ${field} existe déjà`;
+    } else {
+      message = `${resource} existe déjà`;
+    }
+
+    throw new ConflictException(message);
+  }
+
+  static duplicateWithDetail(detail: DuplicateErrorDetail): never {
+    throw new ConflictException(detail.message);
+  }
+
+  static conflict(message: string): never {
     throw new ConflictException(message);
   }
 
@@ -55,33 +71,28 @@ export class ExceptionFactory {
   }
 
   static database(error: unknown, resource: string): never {
-    // Type guard pour QueryFailedError
-    if (error instanceof QueryFailedError) {
-      const dbError = error.driverError as DatabaseError;
+    // Gestion des erreurs de duplication (conflit)
+    if (isDuplicateKeyError(error)) {
+      const field = extractDuplicateField(error);
 
-      // PostgreSQL - violation d'unicité
-      if (dbError?.code === '23505') {
-        return this.duplicate(resource);
+      if (field) {
+        return this.duplicate(resource, field);
       }
 
-      // PostgreSQL - violation de clé étrangère
-      if (dbError?.code === '23503') {
+      return this.duplicate(resource);
+    }
+
+    // Gestion des erreurs de clé étrangère
+    if (error instanceof QueryFailedError) {
+      const driverError = (error as any).driverError;
+
+      if (driverError?.code === '23503') {
         return this.badRequest(
           `${resource} est référencé par d'autres données`,
         );
       }
 
-      // PostgreSQL - valeur trop longue
-      if (dbError?.code === '22001') {
-        return this.badRequest(`Une valeur est trop longue`);
-      }
-    }
-
-    // Vérifier si c'est une erreur MySQL
-    if (error && typeof error === 'object' && 'code' in error) {
-      const mysqlError = error as { code: string };
-
-      if (mysqlError.code === 'ER_DUP_ENTRY') {
+      if (driverError?.code === '23505') {
         return this.duplicate(resource);
       }
     }
@@ -90,5 +101,33 @@ export class ExceptionFactory {
     const errorMessage =
       error instanceof Error ? error.message : 'Erreur inconnue';
     return this.internal(`Erreur base de données: ${errorMessage}`);
+  }
+
+  // Méthode spécifique pour les conflits métier
+  static businessConflict(
+    entity: string,
+    reason: string,
+    details?: Record<string, unknown>,
+  ): never {
+    throw new ConflictException({
+      message: `Conflit métier sur ${entity}: ${reason}`,
+      entity,
+      reason,
+      details,
+    });
+  }
+
+  // Méthode pour les conflits de version (optimistic lock)
+  static versionConflict(entity: string, id: string): never {
+    throw new ConflictException(
+      `${entity} avec l'ID ${id} a été modifié par un autre utilisateur`,
+    );
+  }
+
+  // Méthode pour les conflits de ressource déjà utilisée
+  static resourceInUse(resource: string, usedBy: string): never {
+    throw new ConflictException(
+      `${resource} est actuellement utilisé par ${usedBy}`,
+    );
   }
 }

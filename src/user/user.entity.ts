@@ -6,10 +6,14 @@ import {
   JoinColumn,
   CreateDateColumn,
   UpdateDateColumn,
+  BeforeUpdate,
+  BeforeInsert,
+  Unique,
 } from 'typeorm';
-import { Role } from '../role/role.entity';
+import { Role } from '../entity/role.entity';
 
 @Entity('user')
+@Unique('UQ_USERS_EMAIL', ['email'])
 export class User {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -27,11 +31,19 @@ export class User {
   @Column()
   prenom: string;
 
-  @Column({ unique: true })
+  @Column()
   email: string;
 
   @Column()
   password: string;
+
+  @BeforeInsert()
+  @BeforeUpdate()
+  normalizeEmail() {
+    if (this.email) {
+      this.email = this.email.toLowerCase().trim();
+    }
+  }
 
   @CreateDateColumn() dte_creation: Date;
   @UpdateDateColumn() dte_modif: Date;
