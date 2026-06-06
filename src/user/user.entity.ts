@@ -1,3 +1,4 @@
+// src/user/user.entity.ts
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -9,8 +10,10 @@ import {
   BeforeUpdate,
   BeforeInsert,
   Unique,
+  OneToOne,
 } from 'typeorm';
 import { Role } from '../entity/role.entity';
+import { Etudiant } from '../etudiant/etudiant.entity';
 
 @Entity('user')
 @Unique('UQ_USERS_EMAIL', ['email'])
@@ -37,6 +40,10 @@ export class User {
   @Column()
   password: string;
 
+  // Relation One-to-One avec Etudiant
+  @OneToOne(() => Etudiant, (etudiant) => etudiant.user)
+  etudiant: Etudiant;
+
   @BeforeInsert()
   @BeforeUpdate()
   normalizeEmail() {
@@ -45,10 +52,21 @@ export class User {
     }
   }
 
-  @CreateDateColumn() dte_creation: Date;
-  @UpdateDateColumn() dte_modif: Date;
-  @Column({ nullable: true }) statut: string;
-  @Column({ nullable: true }) dte_suppression: Date;
-  @Column({ nullable: true }) create_by: number;
-  @Column({ nullable: true }) updated_by: number;
+  @CreateDateColumn()
+  dte_creation: Date;
+
+  @UpdateDateColumn()
+  dte_modif: Date;
+
+  @Column({ nullable: true, default: 'actif' })
+  statut: string;
+
+  @Column({ nullable: true })
+  dte_suppression: Date;
+
+  @Column({ nullable: true, type: 'varchar' })
+  create_by: string;
+
+  @Column({ nullable: true, type: 'varchar' })
+  updated_by: string;
 }

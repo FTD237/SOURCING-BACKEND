@@ -11,8 +11,6 @@ import { QueryFailedError } from 'typeorm';
 import {
   isDuplicateKeyError,
   extractDuplicateField,
-  isPostgresDuplicateError,
-  isMySQLDuplicateError,
 } from '../types/error.types';
 
 interface DuplicateErrorDetail {
@@ -84,7 +82,11 @@ export class ExceptionFactory {
 
     // Gestion des erreurs de clé étrangère
     if (error instanceof QueryFailedError) {
-      const driverError = (error as any).driverError;
+      const driverError = (
+        error as QueryFailedError & {
+          driverError?: { code?: string };
+        }
+      ).driverError;
 
       if (driverError?.code === '23503') {
         return this.badRequest(
