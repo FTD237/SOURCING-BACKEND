@@ -8,43 +8,41 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { Etudiant } from '../etudiant/etudiant.entity';
+import { Statut } from '../common/enum/statut.enum';
 
 @Entity('experience')
 export class Experience {
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
   @Column()
-  student_id: number;
+  student_id: string;
 
   @ManyToOne(() => Etudiant)
   @JoinColumn({ name: 'student_id' })
   etudiant: Etudiant;
 
-  @Column({ nullable: true })
-  company_id: number;
-
-  @Column({ nullable: true })
-  rh_id: number;
+  @Column()
+  company_id: string;
 
   @Column()
   intitule: string;
 
-  @Column({ nullable: true, type: 'text' })
+  @Column({ type: 'text' })
   description: string;
 
   @Column({ nullable: true })
   type: string;
 
-  @Column({ nullable: true, type: 'date' })
+  @Column({ type: 'date' })
   date_debut: Date;
 
-  @Column({ nullable: true, type: 'date' })
+  @Column({ type: 'date' })
   date_fin: Date;
 
   @CreateDateColumn() dte_creation: Date;
   @UpdateDateColumn() dte_modif: Date;
-  @Column({ nullable: true }) statut: string;
+  @Column({ default: Statut.ACTIF }) statut: Statut;
   @Column({ nullable: true }) dte_suppression: Date;
   @Column({ nullable: true }) create_by: number;
   @Column({ nullable: true }) updated_by: number;

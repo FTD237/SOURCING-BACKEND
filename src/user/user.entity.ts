@@ -14,6 +14,8 @@ import {
 } from 'typeorm';
 import { Role } from '../entity/role.entity';
 import { Etudiant } from '../etudiant/etudiant.entity';
+import { Company } from '../company/company.entity';
+import { Statut } from '../common/enum/statut.enum';
 
 @Entity('user')
 @Unique('UQ_USERS_EMAIL', ['email'])
@@ -44,6 +46,9 @@ export class User {
   @OneToOne(() => Etudiant, (etudiant) => etudiant.user)
   etudiant: Etudiant;
 
+  @OneToOne(() => Company, (company) => company.user)
+  company: Company;
+
   @BeforeInsert()
   @BeforeUpdate()
   normalizeEmail() {
@@ -58,8 +63,8 @@ export class User {
   @UpdateDateColumn()
   dte_modif: Date;
 
-  @Column({ nullable: true, default: 'actif' })
-  statut: string;
+  @Column({ default: Statut.ACTIF })
+  statut: Statut;
 
   @Column({ nullable: true })
   dte_suppression: Date;

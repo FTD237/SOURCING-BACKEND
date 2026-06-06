@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
@@ -12,6 +12,7 @@ import { User } from '../user/user.entity';
 import { Role } from '../entity/role.entity';
 import { ExceptionFactory } from '../common/exceptions/exception-factory';
 import { generatePassword } from '../common/utils/generate-password';
+import { Statut } from '../common/enum/statut.enum';
 
 @Injectable()
 export class EtudiantService {
@@ -64,7 +65,7 @@ export class EtudiantService {
         nom: dto.nom,
         prenom: dto.prenom,
         id_role: roleEtudiant.id,
-        statut: 'actif',
+        statut: Statut.ACTIF,
         create_by: createdBy,
       });
 
@@ -77,7 +78,7 @@ export class EtudiantService {
         annee_acad: dto.annee_acad || new Date().getFullYear().toString(),
         is_job_seeker: dto.is_job_seeker || false,
         star_rate: dto.star_rate || 0,
-        statut: 'actif',
+        statut: Statut.ACTIF,
         create_by: createdBy,
       });
 
@@ -107,7 +108,8 @@ export class EtudiantService {
       where: { id },
       relations: { user: true },
     });
-    if (!etudiant) throw new NotFoundException(`Etudiant #${id} introuvable`);
+    if (!etudiant)
+      ExceptionFactory.notFound('Etudiant', `Etudiant #${id} introuvable`);
     return etudiant;
   }
 
@@ -148,7 +150,7 @@ export class EtudiantService {
     currentUser: { id: string; email: string },
   ): Promise<void> {
     const etudiant = await this.findOne(id);
-    etudiant.statut = 'supprime';
+    etudiant.statut = Statut.SUPPRIME;
     etudiant.dte_suppression = new Date();
     etudiant.updated_by = currentUser.id;
     try {

@@ -15,7 +15,7 @@ export class CreateExperienceDto {
     description: "Id de l'étudiant",
   })
   @IsNumber()
-  student_id: number;
+  student_id: string;
 
   @ApiProperty({
     example: '1aec5bef-7a21-47d1-b7f5-c2a3e1b57023',
@@ -23,7 +23,7 @@ export class CreateExperienceDto {
   })
   @IsNumber()
   @IsOptional()
-  company_id?: number;
+  company_id?: string;
 
   @ApiProperty({
     example: '1aec5bef-7a21-47d1-b7f5-c2a3e1b57023',
@@ -31,7 +31,7 @@ export class CreateExperienceDto {
   })
   @IsNumber()
   @IsOptional()
-  rh_id?: number;
+  rh_id?: string;
 
   @ApiProperty({
     example: "Développement d'une plateforme web de E-learning",

@@ -8,7 +8,6 @@ import {
   JoinColumn,
 } from 'typeorm';
 import { Formation } from '../formation/formation.entity';
-import { IsNotEmpty } from 'class-validator';
 
 @Entity('promotion')
 export class Promotion {

@@ -10,6 +10,7 @@ import {
   Unique,
 } from 'typeorm';
 import { User } from '../user/user.entity';
+import { Statut } from '../common/enum/statut.enum';
 
 @Entity('etudiant')
 @Unique('UQ_ETUDIANT_MATRICULE', ['matricule'])
@@ -45,8 +46,8 @@ export class Etudiant {
   @UpdateDateColumn()
   dte_modif: Date;
 
-  @Column({ default: 'actif' })
-  statut: string;
+  @Column({ default: Statut.ACTIF })
+  statut: Statut;
 
   @Column({ nullable: true })
   dte_suppression: Date;

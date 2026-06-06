@@ -58,7 +58,7 @@ export class FormationController {
     status: 200,
     description: 'Formation récupérée avec succès',
   })
-  findOne(@Param('id', ParseIntPipe) id: string) {
+  findOne(@Param('id') id: string) {
     return this.formationService.findOne(id);
   }
 
@@ -71,10 +71,7 @@ export class FormationController {
     status: 200,
     description: 'Mise à jour réussie',
   })
-  update(
-    @Param('id', ParseIntPipe) id: string,
-    @Body() dto: UpdateFormationDto,
-  ) {
+  update(@Param('id') id: string, @Body() dto: UpdateFormationDto) {
     return this.formationService.update(id, dto);
   }
 

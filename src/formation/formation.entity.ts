@@ -8,6 +8,7 @@ import {
   Unique,
 } from 'typeorm';
 import { IsNotEmpty, IsString } from 'class-validator';
+import { Statut } from '../common/enum/statut.enum';
 
 @Entity('formation')
 @Unique('UQ_FORMATION_NOM', ['nom'])
@@ -29,7 +30,7 @@ export class Formation {
 
   @CreateDateColumn() dte_creation: Date;
   @UpdateDateColumn() dte_modif: Date;
-  @Column({ nullable: true }) statut: string;
+  @Column({ default: Statut.ACTIF }) statut: Statut;
   @Column({ nullable: true }) dte_suppression: Date;
   @Column({ nullable: true }) create_by: number;
   @Column({ nullable: true }) updated_by: number;
