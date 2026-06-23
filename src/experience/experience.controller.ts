@@ -46,7 +46,7 @@ export class ExperienceController {
     status: 200,
     description: "Récupérer une expérience par l'id de l'étudiant",
   })
-  findByEtudiant(@Param('studentId', ParseIntPipe) studentId: number) {
+  findByEtudiant(@Param('studentId', ParseIntPipe) studentId: string) {
     return this.experienceService.findByEtudiant(studentId);
   }
 
@@ -56,7 +56,7 @@ export class ExperienceController {
     status: 200,
     description: 'Récupérer une expérience par son id',
   })
-  findOne(@Param('id', ParseIntPipe) id: number) {
+  findOne(@Param('id', ParseIntPipe) id: string) {
     return this.experienceService.findOne(id);
   }
 
@@ -67,7 +67,7 @@ export class ExperienceController {
     description: "Modifier les informations d'une expérience",
   })
   update(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id', ParseIntPipe) id: string,
     @Body() dto: UpdateExperienceDto,
   ) {
     return this.experienceService.update(id, dto);
@@ -80,7 +80,7 @@ export class ExperienceController {
     status: 200,
     description: 'Successfully deleted experience',
   })
-  remove(@Param('id', ParseIntPipe) id: number) {
+  remove(@Param('id', ParseIntPipe) id: string) {
     return this.experienceService.remove(id);
   }
 }

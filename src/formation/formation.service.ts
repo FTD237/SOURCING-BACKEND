@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Formation } from './formation.entity';
 import { CreateFormationDto, UpdateFormationDto } from './formation.dto';
+import { Statut } from '../common/enum/statut.enum';
 
 @Injectable()
 export class FormationService {
@@ -34,7 +35,7 @@ export class FormationService {
 
   async remove(id: string): Promise<void> {
     const formation = await this.findOne(id);
-    formation.statut = 'supprime';
+    formation.statut = Statut.SUPPRIME;
     formation.dte_suppression = new Date();
     await this.formationRepo.save(formation);
   }
