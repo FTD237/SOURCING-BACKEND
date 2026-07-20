@@ -1,5 +1,16 @@
 // ─── offre.controller.ts ─────────────────────────────────────────────────────
-import { Controller, Get, Post, Put, Delete, Param, Body, ParseIntPipe, HttpCode, HttpStatus } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Param,
+  Body,
+  ParseIntPipe,
+  HttpCode,
+  HttpStatus,
+} from '@nestjs/common';
 import { OffreService } from './offre.service';
 import { CreateOffreDto, UpdateOffreDto } from './offre.dto';
 
