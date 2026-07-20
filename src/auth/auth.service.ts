@@ -2,7 +2,6 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
-import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import { User } from 'src/user/user.entity';
 import { ExceptionFactory } from '../common/exceptions/exception-factory';
@@ -10,9 +9,8 @@ import { ExceptionFactory } from '../common/exceptions/exception-factory';
 export class AuthService {
   constructor(
     @InjectRepository(User)
-    private userRepository: Repository<User>,
-    private jwtService: JwtService,
-    private configService: ConfigService,
+    private readonly userRepository: Repository<User>,
+    private readonly jwtService: JwtService,
   ) {}
 
   async login(email: string, password: string) {
