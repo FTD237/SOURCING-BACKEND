@@ -1,31 +1,16 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import * as fs from 'fs';
 import * as process from 'node:process';
-import { GlobalExceptionFilter } from './common/filters/http-exception.filter';
-import { RateLimitGuard } from './guards/rate-limit.guard';
+import { configureApp } from './setup-app';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
-  app.useGlobalFilters(new GlobalExceptionFilter());
-
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      transform: true,
-      transformOptions: {
-        enableImplicitConversion: true,
-      },
-    }),
-  );
-
+  configureApp(app);
   app.enableCors();
-
-  app.useGlobalGuards(new RateLimitGuard());
 
   const config = new DocumentBuilder()
     .setTitle('Sourcing API')
