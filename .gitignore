@@ -43,6 +43,9 @@ lerna-debug.log*
 .env.production.local
 .env.local
 
+# cucumber
+reports/cucumber-report.html
+
 # temp directory
 .temp
 .tmp
