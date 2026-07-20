@@ -1,34 +1,116 @@
-// ─── etudiant.dto.ts ────────────────────────────────────────────────────────
-import { IsBoolean, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
-import { PartialType } from '@nestjs/mapped-types';
+// src/etudiant/etudiant.dto.ts
+import { ApiProperty } from '@nestjs/swagger';
+import {
+  IsEmail,
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  IsBoolean,
+  IsNumber,
+  Min,
+  Max,
+} from 'class-validator';
+import { User } from '../user/user.entity';
+import { Etudiant } from './etudiant.entity';
 
 export class CreateEtudiantDto {
-  @IsNumber()
-  userId: number;
+  // Informations User
+  @ApiProperty()
+  @IsEmail()
+  @IsNotEmpty()
+  email: string;
 
-  @IsNumber()
-  @IsOptional()
-  promotionId?: number;
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  nom: string;
 
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  prenom: string;
+
+  // Informations Etudiant
+  @ApiProperty()
+  @IsNotEmpty()
+  @IsString()
+  promotionId: string;
+
+  @ApiProperty()
   @IsString()
   @IsNotEmpty()
   matricule: string;
 
+  @ApiProperty()
+  @IsNotEmpty()
   @IsString()
-  @IsOptional()
-  annee_acad?: string;
+  annee_acad: string;
 
-  @IsBoolean()
+  @ApiProperty({ required: false, default: false })
   @IsOptional()
+  @IsBoolean()
   is_job_seeker?: boolean;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(5)
+  star_rate?: number;
 }
 
-export class UpdateEtudiantDto extends PartialType(CreateEtudiantDto) {
-  @IsNumber()
+export class UpdateEtudiantDto {
+  @ApiProperty({
+    required: false,
+    example: 'UI2027',
+    description: 'matricule étudiant',
+  })
   @IsOptional()
-  star_rate?: number;
-
   @IsString()
+  matricule?: string;
+
+  @ApiProperty({ required: false, example: 'logan' })
   @IsOptional()
-  statut?: string;
+  @IsString()
+  nom?: string;
+
+  @ApiProperty({ required: false, example: 'prenom' })
+  @IsOptional()
+  @IsString()
+  prenom?: string;
+
+  @IsOptional()
+  @IsString()
+  @ApiProperty({ required: false, example: 'prenom' })
+  promotionId?: string;
+
+  @IsOptional()
+  @IsString()
+  @ApiProperty({ required: false, example: 'matricule' })
+  annee_acad?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  @ApiProperty({ required: false, example: 'true' })
+  is_job_seeker?: boolean;
+
+  @ApiProperty({ required: false, example: 1 })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(5)
+  star_rate?: number;
+}
+
+export class CreateEtudiantResponseDto {
+  @ApiProperty()
+  user: User;
+
+  @ApiProperty()
+  etudiant: Etudiant;
+
+  @ApiProperty({
+    description: 'Mot de passe généré automatiquement (à envoyer par email)',
+  })
+  generatedPassword: string;
 }

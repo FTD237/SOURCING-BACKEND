@@ -1,40 +1,60 @@
+// src/etudiant/etudiant.entity.ts
 import {
-  Entity, PrimaryGeneratedColumn, Column,
-  ManyToOne, JoinColumn, CreateDateColumn, UpdateDateColumn
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  OneToOne,
+  JoinColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+  Unique,
 } from 'typeorm';
 import { User } from '../user/user.entity';
+import { Statut } from '../common/enum/statut.enum';
 
 @Entity('etudiant')
+@Unique('UQ_ETUDIANT_MATRICULE', ['matricule'])
 export class Etudiant {
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
   @Column()
-  userId: number;
+  userId: string;
 
-  @ManyToOne(() => User)
+  @OneToOne(() => User, (user) => user.etudiant)
   @JoinColumn({ name: 'userId' })
   user: User;
 
-  @Column({ nullable: true })
-  promotionId: number;
+  @Column()
+  promotionId: string;
 
-  @Column({ unique: true })
+  @Column()
   matricule: string;
 
-  @Column({ nullable: true })
+  @Column()
   annee_acad: string;
 
   @Column({ default: false })
   is_job_seeker: boolean;
 
-  @Column({ nullable: true, type: 'float' })
+  @Column({ nullable: true, type: 'float', default: 0 })
   star_rate: number;
 
-  @CreateDateColumn() dte_creation: Date;
-  @UpdateDateColumn() dte_modif: Date;
-  @Column({ nullable: true }) statut: string;
-  @Column({ nullable: true }) dte_suppression: Date;
-  @Column({ nullable: true }) create_by: number;
-  @Column({ nullable: true }) updated_by: number;
+  @CreateDateColumn()
+  dte_creation: Date;
+
+  @UpdateDateColumn()
+  dte_modif: Date;
+
+  @Column({ default: Statut.ACTIF })
+  statut: Statut;
+
+  @Column({ nullable: true })
+  dte_suppression: Date;
+
+  @Column({ nullable: true, type: 'varchar' })
+  create_by: string;
+
+  @Column({ nullable: true, type: 'varchar' })
+  updated_by: string;
 }

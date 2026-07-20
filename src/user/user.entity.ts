@@ -1,3 +1,4 @@
+// src/user/user.entity.ts
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -6,10 +7,18 @@ import {
   JoinColumn,
   CreateDateColumn,
   UpdateDateColumn,
+  BeforeUpdate,
+  BeforeInsert,
+  Unique,
+  OneToOne,
 } from 'typeorm';
-import { Role } from '../role/role.entity';
+import { Role } from '../entity/role.entity';
+import { Etudiant } from '../etudiant/etudiant.entity';
+import { Company } from '../company/company.entity';
+import { Statut } from '../common/enum/statut.enum';
 
 @Entity('user')
+@Unique('UQ_USERS_EMAIL', ['email'])
 export class User {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -27,16 +36,42 @@ export class User {
   @Column()
   prenom: string;
 
-  @Column({ unique: true })
+  @Column()
   email: string;
 
   @Column()
   password: string;
 
-  @CreateDateColumn() dte_creation: Date;
-  @UpdateDateColumn() dte_modif: Date;
-  @Column({ nullable: true }) statut: string;
-  @Column({ nullable: true }) dte_suppression: Date;
-  @Column({ nullable: true }) create_by: number;
-  @Column({ nullable: true }) updated_by: number;
+  // Relation One-to-One avec Etudiant
+  @OneToOne(() => Etudiant, (etudiant) => etudiant.user)
+  etudiant: Etudiant;
+
+  @OneToOne(() => Company, (company) => company.user)
+  company: Company;
+
+  @BeforeInsert()
+  @BeforeUpdate()
+  normalizeEmail() {
+    if (this.email) {
+      this.email = this.email.toLowerCase().trim();
+    }
+  }
+
+  @CreateDateColumn()
+  dte_creation: Date;
+
+  @UpdateDateColumn()
+  dte_modif: Date;
+
+  @Column({ default: Statut.ACTIF })
+  statut: Statut;
+
+  @Column({ nullable: true })
+  dte_suppression: Date;
+
+  @Column({ nullable: true, type: 'varchar' })
+  create_by: string;
+
+  @Column({ nullable: true, type: 'varchar' })
+  updated_by: string;
 }

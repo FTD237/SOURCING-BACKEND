@@ -4,19 +4,28 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
+import { Formation } from '../formation/formation.entity';
 
-@Entity('role')
-export class Role {
+@Entity('promotion')
+export class Promotion {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
   @Column()
-  nom: string;
+  id_formation: string;
+
+  @ManyToOne(() => Formation)
+  @JoinColumn({ name: 'id_formation' })
+  formation: Formation;
+
+  @Column()
+  annee: string;
 
   @CreateDateColumn() dte_creation: Date;
   @UpdateDateColumn() dte_modif: Date;
-
   @Column({ nullable: true }) statut: string;
   @Column({ nullable: true }) dte_suppression: Date;
   @Column({ nullable: true }) create_by: number;

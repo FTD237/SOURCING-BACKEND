@@ -1,18 +1,11 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import { User } from 'src/user/user.entity';
-
-interface JwtPayload {
-  id: string;
-  email: string;
-  iat?: number;
-  exp?: number;
-}
-
+import { ExceptionFactory } from '../common/exceptions/exception-factory';
 @Injectable()
 export class AuthService {
   constructor(
@@ -22,23 +15,14 @@ export class AuthService {
     private configService: ConfigService,
   ) {}
 
-  async signup(email: string, nom: string, password: string) {
-    const existingUser = await this.userRepository.findOne({
-      where: [{ email }, { nom }],
+  async login(email: string, password: string) {
+    const user = await this.userRepository.findOne({
+      where: { email },
+      relations: { role: true },
     });
 
-    if (existingUser) {
-      throw new BadRequestException('Email already exists');
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const user = this.userRepository.create({
-      email,
-      nom,
-      password: hashedPassword,
-    });
-
-    await this.userRepository.save(user);
+    if (!user || !(await bcrypt.compare(password, user.password)))
+      ExceptionFactory.badRequest('Email ou mot de passe incorect');
 
     const access_token = this.jwtService.sign({
       id: user.id,
@@ -48,41 +32,7 @@ export class AuthService {
 
     return {
       access_token,
-      user: {
-        id: user.id,
-        nom: user.nom,
-        email: user.email,
-      },
+      user: { id: user.id, nom: user.nom, email: user.email },
     };
-  }
-
-  async login(email: string, password: string) {
-    const user = await this.userRepository.findOne({ where: { email } });
-
-    if (!user || !(await bcrypt.compare(password, user.password))) {
-      throw new BadRequestException('Email ou mot de passe incorrect');
-    }
-
-    const access_token = this.jwtService.sign({
-      id: user.id,
-      email: user.email,
-    });
-
-    return {
-      access_token,
-      user: {
-        id: user.id,
-        nom: user.nom,
-        email: user.email,
-      },
-    };
-  }
-
-  validateToken(token: string): JwtPayload {
-    try {
-      return this.jwtService.verify<JwtPayload>(token);
-    } catch {
-      throw new BadRequestException('Token invalide');
-    }
   }
 }

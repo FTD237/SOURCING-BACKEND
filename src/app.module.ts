@@ -9,8 +9,9 @@ import { ExperienceModule } from './experience/experience.module';
 import { OffreModule } from './offre/offre.module';
 import { SkillModule } from './skills/skill.module';
 import { FormationModule } from './formation/formation.module';
-import { RolePermissionModule } from './role-permission/role-permission.module';
+import { PromotionModule } from './promotion/promotion.module';
 import { AuthModule } from './auth/auth.module';
+import { CompanyModule } from './company/company.module';
 
 @Module({
   imports: [
@@ -72,7 +73,8 @@ import { AuthModule } from './auth/auth.module';
     OffreModule,
     SkillModule,
     FormationModule,
-    RolePermissionModule,
+    PromotionModule,
+    CompanyModule,
   ],
 })
 export class AppModule {}

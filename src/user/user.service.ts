@@ -1,7 +1,7 @@
 import {
+  ConflictException,
   Injectable,
   NotFoundException,
-  ConflictException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -9,6 +9,7 @@ import * as bcrypt from 'bcrypt';
 import { User } from './user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { Statut } from '../common/enum/statut.enum';
 
 @Injectable()
 export class UserService {
@@ -48,8 +49,8 @@ export class UserService {
 
   async remove(id: string): Promise<void> {
     const user = await this.findOne(id);
-    user.statut = 'supprime';
+    user.statut = Statut.SUPPRIME;
     user.dte_suppression = new Date();
-    await this.userRepo.save(user); // soft delete
+    await this.userRepo.save(user);
   }
 }
