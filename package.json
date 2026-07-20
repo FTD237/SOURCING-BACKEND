@@ -89,5 +89,6 @@
       "bcrypt",
       "unrs-resolver"
     ]
-  }
+  },
+  "packageManager": "pnpm@11.7.0"
 }
