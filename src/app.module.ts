@@ -12,12 +12,22 @@ import { FormationModule } from './formation/formation.module';
 import { PromotionModule } from './promotion/promotion.module';
 import { AuthModule } from './auth/auth.module';
 import { CompanyModule } from './company/company.module';
+import { ThrottlerModule } from '@nestjs/throttler';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: `.env.${process.env.NODE_ENV ?? 'development'}`,
+    }),
+
+    ThrottlerModule.forRoot({
+      throttlers: [
+        {
+          ttl: 60000,
+          limit: 10,
+        },
+      ],
     }),
 
     TypeOrmModule.forRootAsync({

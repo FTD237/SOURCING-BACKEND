@@ -69,12 +69,5 @@ export function extractDuplicateValue(error: unknown): string | null {
     const match = driverError.detail.match(/=\(([^)]+)\)/);
     return match ? match[1] : null;
   }
-
-  // MySQL
-  if (driverError?.code === 'ER_DUP_ENTRY' && driverError.sqlMessage) {
-    const match = driverError.sqlMessage.match(/for key '.*'$/);
-    return null;
-  }
-
   return null;
 }
