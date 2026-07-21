@@ -10,7 +10,6 @@ async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
   configureApp(app);
-  app.enableCors();
 
   const config = new DocumentBuilder()
     .setTitle('Sourcing API')
