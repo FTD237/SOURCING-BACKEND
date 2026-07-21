@@ -33,7 +33,7 @@ export class Company {
 
   @CreateDateColumn() dte_creation: Date;
   @UpdateDateColumn() dte_modif: Date;
-  @Column({ default: Statut.ACTIF }) statut: Statut;
+  @Column({ default: Statut.ACTIF, type: 'enum', enum: Statut }) statut: Statut;
   @Column({ nullable: true }) dte_suppression: Date;
   @Column({ nullable: true, type: 'varchar' }) create_by: string;
   @Column({ nullable: true, type: 'varchar' }) updated_by: string;

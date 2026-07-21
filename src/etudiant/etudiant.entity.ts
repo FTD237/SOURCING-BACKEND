@@ -46,7 +46,7 @@ export class Etudiant {
   @UpdateDateColumn()
   dte_modif: Date;
 
-  @Column({ default: Statut.ACTIF })
+  @Column({ default: Statut.ACTIF, type: 'enum', enum: Statut })
   statut: Statut;
 
   @Column({ nullable: true })
