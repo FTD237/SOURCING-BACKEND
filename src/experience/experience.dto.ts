@@ -8,6 +8,7 @@ import {
 } from 'class-validator';
 import { PartialType } from '@nestjs/mapped-types';
 import { ApiProperty } from '@nestjs/swagger';
+import { Statut } from '../common/enum/statut.enum';
 
 export class CreateExperienceDto {
   @ApiProperty({
@@ -74,4 +75,11 @@ export class CreateExperienceDto {
   date_fin?: string;
 }
 
-export class UpdateExperienceDto extends PartialType(CreateExperienceDto) {}
+export class UpdateExperienceDto extends PartialType(CreateExperienceDto) {
+  @ApiProperty({
+    example: Statut.ACTIF,
+    description: 'statut',
+  })
+  @IsOptional()
+  statut?: Statut;
+}
