@@ -8,7 +8,7 @@ import { StorageService } from './storage.service';
 import { Statut } from '../common/enum/statut.enum';
 import { ExceptionFactory } from '../common/exceptions/exception-factory';
 
-const ADMIN_ROLES = ['admin', 'super-admin'];
+const ADMIN_ROLES = new Set(['admin', 'super-admin']);
 
 @Injectable()
 export class FileService {
@@ -82,7 +82,7 @@ export class FileService {
     requester: { id: string; role: string },
   ): void {
     const isOwner = file.user_id === requester.id;
-    const isAdmin = ADMIN_ROLES.includes(requester.role);
+    const isAdmin = ADMIN_ROLES.has(requester.role);
 
     if (!isOwner && !isAdmin) {
       ExceptionFactory.forbidden("Vous n'avez pas accès à ce fichier");
