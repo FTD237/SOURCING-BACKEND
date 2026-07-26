@@ -12,6 +12,7 @@ import { FormationModule } from './formation/formation.module';
 import { PromotionModule } from './promotion/promotion.module';
 import { AuthModule } from './auth/auth.module';
 import { CompanyModule } from './company/company.module';
+import { MailModule } from './mail/mail.module';
 
 @Module({
   imports: [
@@ -75,6 +76,7 @@ import { CompanyModule } from './company/company.module';
     FormationModule,
     PromotionModule,
     CompanyModule,
+    MailModule,
   ],
 })
 export class AppModule {}

@@ -7,6 +7,11 @@ allowBuilds:
 overrides:
   js-yaml: '>=5.2.2'
   'brace-expansion@5': '>=5.0.8'
+  # tirés par @nestjs-modules/mailer > preview-email (fonctionnalité de
+  # prévisualisation en dev, non utilisée par MailModule) > mailparser
+  nodemailer: '>=9.0.1'
+  linkify-it: '>=5.0.2'
+  uuid: '>=11.1.1'
 
 auditConfig:
   ignoreGhsas:
