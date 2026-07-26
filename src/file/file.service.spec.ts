@@ -1,6 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { FileService } from './file.service';
 import { FileEntity } from './file.entity';
 import { StorageService } from './storage.service';
@@ -61,6 +65,13 @@ describe('FileService', () => {
   afterEach(() => jest.clearAllMocks());
 
   describe('create', () => {
+    it("rejette l'upload si aucun fichier n'est fourni", async () => {
+      await expect(
+        service.create(undefined as never, owner.id),
+      ).rejects.toThrow(BadRequestException);
+      expect(storageServiceMock.upload).not.toHaveBeenCalled();
+    });
+
     it('téléverse le contenu sur R2 puis persiste les métadonnées', async () => {
       const multerFile = {
         originalname: 'cv.pdf',

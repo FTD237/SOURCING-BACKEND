@@ -19,6 +19,8 @@ export class FileService {
   ) {}
 
   async create(file: Express.Multer.File, userId: string): Promise<FileEntity> {
+    if (!file) ExceptionFactory.badRequest('Aucun fichier fourni');
+
     const key = `${randomUUID()}${extname(file.originalname)}`;
     await this.storageService.upload(key, file.buffer, file.mimetype);
 

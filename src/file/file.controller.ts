@@ -8,7 +8,6 @@ import {
   UploadedFile,
   UseInterceptors,
   UseGuards,
-  BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
@@ -37,8 +36,6 @@ export class FileController {
     @UploadedFile() file: Express.Multer.File,
     @GetUser('id') userId: string,
   ) {
-    if (!file) throw new BadRequestException('Aucun fichier fourni');
-
     return this.fileService.create(file, userId);
   }
 

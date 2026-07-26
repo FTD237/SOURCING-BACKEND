@@ -1,5 +1,4 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { BadRequestException } from '@nestjs/common';
 import { FileController } from './file.controller';
 import { FileService } from './file.service';
 
@@ -26,12 +25,6 @@ describe('FileController', () => {
   afterEach(() => jest.clearAllMocks());
 
   describe('upload', () => {
-    it("rejette l'upload si aucun fichier n'est fourni", async () => {
-      await expect(
-        controller.upload(undefined as never, 'user-1'),
-      ).rejects.toThrow(BadRequestException);
-    });
-
     it('délègue au service avec le fichier et son propriétaire', async () => {
       const multerFile = { originalname: 'cv.pdf' } as Express.Multer.File;
       fileServiceMock.create.mockResolvedValue({ id: 'file-1' });
