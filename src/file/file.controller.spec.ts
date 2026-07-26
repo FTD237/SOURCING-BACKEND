@@ -11,7 +11,7 @@ describe('FileController', () => {
     findAllForUser: jest.fn(),
     findOne: jest.fn(),
     remove: jest.fn(),
-    getFilePath: jest.fn(),
+    getDownloadUrl: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -49,6 +49,24 @@ describe('FileController', () => {
       await controller.findAll('user-1');
 
       expect(fileServiceMock.findAllForUser).toHaveBeenCalledWith('user-1');
+    });
+  });
+
+  describe('download', () => {
+    it('redirige vers le lien signé fourni par le service', async () => {
+      const file = { id: 'file-1' };
+      fileServiceMock.findOne.mockResolvedValue(file);
+      fileServiceMock.getDownloadUrl.mockResolvedValue(
+        'https://r2.example/signed-url',
+      );
+      const redirect = jest.fn();
+      const user = { id: 'user-1', role: 'etudiant' };
+
+      await controller.download('file-1', user, { redirect } as never);
+
+      expect(fileServiceMock.findOne).toHaveBeenCalledWith('file-1', user);
+      expect(fileServiceMock.getDownloadUrl).toHaveBeenCalledWith(file);
+      expect(redirect).toHaveBeenCalledWith('https://r2.example/signed-url');
     });
   });
 

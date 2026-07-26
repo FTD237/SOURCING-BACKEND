@@ -9,7 +9,6 @@ import {
   UseInterceptors,
   UseGuards,
   BadRequestException,
-  StreamableFile,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
@@ -19,7 +18,6 @@ import {
   ApiConsumes,
 } from '@nestjs/swagger';
 import type { Response } from 'express';
-import { createReadStream } from 'node:fs';
 import { FileService } from './file.service';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { GetUser } from '../auth/get-user.decorator';
@@ -64,24 +62,24 @@ export class FileController {
   }
 
   @Get(':id/download')
-  @ApiOperation({ summary: 'Télécharger un fichier' })
-  @ApiResponse({ status: 200, description: 'Contenu du fichier' })
+  @ApiOperation({
+    summary: 'Obtenir un lien de téléchargement temporaire',
+  })
+  @ApiResponse({
+    status: 302,
+    description: 'Redirection vers une URL signée (expire après 5 min)',
+  })
   @ApiResponse({ status: 404, description: 'Fichier introuvable' })
   @ApiResponse({ status: 403, description: 'Accès refusé' })
   async download(
     @Param('id') id: string,
     @GetUser() user: { id: string; role: string },
-    @Res({ passthrough: true }) res: Response,
-  ): Promise<StreamableFile> {
+    @Res() res: Response,
+  ): Promise<void> {
     const file = await this.fileService.findOne(id, user);
-    const filePath = this.fileService.getFilePath(file);
+    const url = await this.fileService.getDownloadUrl(file);
 
-    res.set({
-      'Content-Type': file.mimetype,
-      'Content-Disposition': `attachment; filename="${encodeURIComponent(file.original_name)}"`,
-    });
-
-    return new StreamableFile(createReadStream(filePath));
+    res.redirect(url);
   }
 
   @Delete(':id')

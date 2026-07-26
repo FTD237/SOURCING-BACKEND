@@ -4,9 +4,6 @@
 /build
 *.tsbuildinfo
 
-# fichiers uploadés en local
-/uploads
-
 # Logs
 logs
 *.log

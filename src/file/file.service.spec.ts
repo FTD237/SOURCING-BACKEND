@@ -1,15 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { ConfigService } from '@nestjs/config';
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
-import * as fsPromises from 'node:fs/promises';
 import { FileService } from './file.service';
 import { FileEntity } from './file.entity';
+import { StorageService } from './storage.service';
 import { Statut } from '../common/enum/statut.enum';
-
-jest.mock('node:fs/promises', () => ({
-  unlink: jest.fn().mockResolvedValue(undefined),
-}));
 
 describe('FileService', () => {
   let service: FileService;
@@ -26,7 +21,13 @@ describe('FileService', () => {
     save: mockSave,
   };
 
-  const configServiceMock = { get: jest.fn().mockReturnValue('./uploads') };
+  const storageServiceMock = {
+    upload: jest.fn().mockResolvedValue(undefined),
+    delete: jest.fn().mockResolvedValue(undefined),
+    getSignedDownloadUrl: jest
+      .fn()
+      .mockResolvedValue('https://r2.example/signed-url'),
+  };
 
   const owner = { id: 'user-1', role: 'etudiant' };
   const admin = { id: 'admin-1', role: 'admin' };
@@ -50,7 +51,7 @@ describe('FileService', () => {
       providers: [
         FileService,
         { provide: getRepositoryToken(FileEntity), useValue: repoMock },
-        { provide: ConfigService, useValue: configServiceMock },
+        { provide: StorageService, useValue: storageServiceMock },
       ],
     }).compile();
 
@@ -60,23 +61,27 @@ describe('FileService', () => {
   afterEach(() => jest.clearAllMocks());
 
   describe('create', () => {
-    it('persiste les métadonnées du fichier uploadé', async () => {
+    it('téléverse le contenu sur R2 puis persiste les métadonnées', async () => {
       const multerFile = {
         originalname: 'cv.pdf',
-        filename: 'uuid-abc.pdf',
         mimetype: 'application/pdf',
         size: 1024,
+        buffer: Buffer.from('contenu'),
       } as Express.Multer.File;
       mockCreate.mockReturnValue(buildFile());
       mockSave.mockResolvedValue(buildFile());
 
       await service.create(multerFile, owner.id);
 
+      expect(storageServiceMock.upload).toHaveBeenCalledWith(
+        expect.stringMatching(/\.pdf$/),
+        multerFile.buffer,
+        'application/pdf',
+      );
       expect(mockCreate).toHaveBeenCalledWith(
         expect.objectContaining({
           user_id: owner.id,
           original_name: 'cv.pdf',
-          stored_name: 'uuid-abc.pdf',
         }),
       );
       expect(mockSave).toHaveBeenCalled();
@@ -123,8 +128,22 @@ describe('FileService', () => {
     });
   });
 
+  describe('getDownloadUrl', () => {
+    it('délègue la génération du lien signé au StorageService', async () => {
+      const file = buildFile();
+
+      const url = await service.getDownloadUrl(file);
+
+      expect(storageServiceMock.getSignedDownloadUrl).toHaveBeenCalledWith(
+        file.stored_name,
+        file.original_name,
+      );
+      expect(url).toBe('https://r2.example/signed-url');
+    });
+  });
+
   describe('remove', () => {
-    it('effectue une suppression logique et retire le fichier physique', async () => {
+    it('effectue une suppression logique et retire l’objet sur R2', async () => {
       const file = buildFile();
       mockFindOne.mockResolvedValue(file);
       mockSave.mockResolvedValue(file);
@@ -134,7 +153,7 @@ describe('FileService', () => {
       expect(file.statut).toBe(Statut.SUPPRIME);
       expect(file.dte_suppression).toBeInstanceOf(Date);
       expect(mockSave).toHaveBeenCalledWith(file);
-      expect(fsPromises.unlink).toHaveBeenCalled();
+      expect(storageServiceMock.delete).toHaveBeenCalledWith(file.stored_name);
     });
 
     it("refuse la suppression si l'utilisateur n'a pas accès", async () => {

@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { ConfigService } from '@nestjs/config';
-import { join } from 'node:path';
-import { unlink } from 'node:fs/promises';
+import { randomUUID } from 'node:crypto';
+import { extname } from 'node:path';
 import { FileEntity } from './file.entity';
+import { StorageService } from './storage.service';
 import { Statut } from '../common/enum/statut.enum';
 import { ExceptionFactory } from '../common/exceptions/exception-factory';
 
@@ -15,14 +15,17 @@ export class FileService {
   constructor(
     @InjectRepository(FileEntity)
     private readonly fileRepository: Repository<FileEntity>,
-    private readonly configService: ConfigService,
+    private readonly storageService: StorageService,
   ) {}
 
   async create(file: Express.Multer.File, userId: string): Promise<FileEntity> {
+    const key = `${randomUUID()}${extname(file.originalname)}`;
+    await this.storageService.upload(key, file.buffer, file.mimetype);
+
     const entity = this.fileRepository.create({
       user_id: userId,
       original_name: file.originalname,
-      stored_name: file.filename,
+      stored_name: key,
       mimetype: file.mimetype,
       size: file.size,
       create_by: userId,
@@ -53,10 +56,11 @@ export class FileService {
     return file;
   }
 
-  getFilePath(file: FileEntity): string {
-    const uploadDir =
-      this.configService.get<string>('UPLOAD_DIR') ?? './uploads';
-    return join(uploadDir, file.stored_name);
+  async getDownloadUrl(file: FileEntity): Promise<string> {
+    return this.storageService.getSignedDownloadUrl(
+      file.stored_name,
+      file.original_name,
+    );
   }
 
   async remove(
@@ -70,7 +74,7 @@ export class FileService {
     file.updated_by = requester.id;
     await this.fileRepository.save(file);
 
-    await unlink(this.getFilePath(file)).catch(() => undefined);
+    await this.storageService.delete(file.stored_name).catch(() => undefined);
   }
 
   private assertAccess(
