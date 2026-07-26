@@ -21,6 +21,8 @@
     "test:cucumber": "cucumber-js"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1095.0",
+    "@aws-sdk/s3-request-presigner": "^3.1095.0",
     "@nestjs-modules/mailer": "^2.3.7",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.4",
@@ -39,6 +41,7 @@
     "dotenv": "^17.4.2",
     "handlebars": "^4.7.9",
     "helmet": "^8.3.0",
+    "multer": "^2.2.0",
     "nodemailer": "^9.0.3",
     "pg": "^8.21.0",
     "reflect-metadata": "^0.2.2",
@@ -55,6 +58,7 @@
     "@nestjs/testing": "^11.0.1",
     "@types/express": "^5.0.0",
     "@types/jest": "^30.0.0",
+    "@types/multer": "^2.2.0",
     "@types/node": "^22.10.7",
     "@types/nodemailer": "^8.0.1",
     "@types/passport-jwt": "^4.0.1",
