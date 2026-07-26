@@ -13,6 +13,7 @@ import { PromotionModule } from './promotion/promotion.module';
 import { AuthModule } from './auth/auth.module';
 import { CompanyModule } from './company/company.module';
 import { MailModule } from './mail/mail.module';
+import { FileModule } from './file/file.module';
 
 @Module({
   imports: [
@@ -77,6 +78,7 @@ import { MailModule } from './mail/mail.module';
     PromotionModule,
     CompanyModule,
     MailModule,
+    FileModule,
   ],
 })
 export class AppModule {}
