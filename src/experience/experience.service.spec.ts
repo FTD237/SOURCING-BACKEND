@@ -147,7 +147,7 @@ describe('ExperienceService', () => {
     it('devrait mettre à jour une expérience existante', async () => {
       const dto: UpdateExperienceDto = {
         statut: Statut.INACTIF,
-      } as UpdateExperienceDto;
+      };
       const updated = buildExperience({ statut: Statut.INACTIF });
 
       mockFindOne.mockResolvedValue(mockExperience);
