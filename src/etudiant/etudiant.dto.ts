@@ -9,9 +9,11 @@ import {
   IsNumber,
   Min,
   Max,
+  IsEnum,
 } from 'class-validator';
 import { User } from '../user/user.entity';
 import { Etudiant } from './etudiant.entity';
+import { Statut } from '../common/enum/statut.enum';
 
 export class CreateEtudiantDto {
   // Informations User
@@ -100,6 +102,11 @@ export class UpdateEtudiantDto {
   @Min(0)
   @Max(5)
   star_rate?: number;
+
+  @ApiProperty({ required: false, example: Statut.ACTIF })
+  @IsOptional()
+  @IsEnum(Statut)
+  statut?: Statut;
 }
 
 export class CreateEtudiantResponseDto {
@@ -108,9 +115,4 @@ export class CreateEtudiantResponseDto {
 
   @ApiProperty()
   etudiant: Etudiant;
-
-  @ApiProperty({
-    description: 'Mot de passe généré automatiquement (à envoyer par email)',
-  })
-  generatedPassword: string;
 }
