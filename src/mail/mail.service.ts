@@ -46,4 +46,23 @@ export class MailService {
       context: { nom, resetLink },
     });
   }
+
+  async sendAccountActivationMail(
+    to: string,
+    nom: string,
+    activationLink: string,
+    dureeValidite = '24 heures',
+  ): Promise<void> {
+    await this.sendMail({
+      to,
+      subject: 'Bienvenue - Activez votre compte',
+      template: 'welcome',
+      context: {
+        nom,
+        lien_activation: activationLink,
+        duree_validite: dureeValidite,
+        annee: new Date().getFullYear(),
+      },
+    });
+  }
 }
