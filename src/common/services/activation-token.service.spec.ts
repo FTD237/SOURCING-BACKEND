@@ -5,7 +5,6 @@ import { ActivationTokenService } from './activation-token.service';
 import { ActivationToken } from '../../entity/activation-token.entity';
 import { ExceptionFactory } from '../exceptions/exception-factory';
 
-
 jest.mock('../exceptions/exception-factory', () => ({
   ExceptionFactory: {
     notFound: jest.fn(() => {
@@ -147,39 +146,37 @@ describe('ActivationTokenService', () => {
     });
 
     it('persiste avec le tokenHash et non le rawToken (sécurité)', async () => {
-      repo.create.mockImplementation(
-        (data: Partial<ActivationToken>): Partial<ActivationToken> => data,
-      );
-      repo.save.mockImplementation(
-        (data: Partial<ActivationToken>): Promise<Partial<ActivationToken>> =>
-          Promise.resolve(data),
+      let capturedArg: Partial<ActivationToken> | undefined;
+      repo.create.mockImplementation((data: Partial<ActivationToken>) => {
+        capturedArg = data;
+        return data;
+      });
+      repo.save.mockImplementation((data: Partial<ActivationToken>) =>
+        Promise.resolve(data),
       );
 
       const rawToken = await service.createAndSave('user-3');
-      const persistedArg = repo.create.mock
-        .calls[0][0] as Partial<ActivationToken>;
 
-      expect(persistedArg.tokenHash).toBeDefined();
-      expect(persistedArg.tokenHash).not.toBe(rawToken);
-      expect(persistedArg.userId).toBe('user-3');
+      expect(capturedArg?.tokenHash).toBeDefined();
+      expect(capturedArg?.tokenHash).not.toBe(rawToken);
+      expect(capturedArg?.userId).toBe('user-3');
     });
 
     it('applique validityHours personnalisé lors de la création', async () => {
-      repo.create.mockImplementation(
-        (data: Partial<ActivationToken>): Partial<ActivationToken> => data,
-      );
-      repo.save.mockImplementation(
-        (data: Partial<ActivationToken>): Promise<Partial<ActivationToken>> =>
-          Promise.resolve(data),
+      let capturedArg: Partial<ActivationToken> | undefined;
+      repo.create.mockImplementation((data: Partial<ActivationToken>) => {
+        capturedArg = data;
+        return data;
+      });
+      repo.save.mockImplementation((data: Partial<ActivationToken>) =>
+        Promise.resolve(data),
       );
 
       const before = Date.now();
       await service.createAndSave('user-4', undefined, 2);
-      const persistedArg = repo.create.mock
-        .calls[0][0] as Partial<ActivationToken>;
 
       const expectedMin = before + 2 * 60 * 60 * 1000;
-      expect(persistedArg.expiresAt?.getTime()).toBeGreaterThanOrEqual(
+      expect(capturedArg?.expiresAt?.getTime()).toBeGreaterThanOrEqual(
         expectedMin - 1000,
       );
     });
@@ -218,6 +215,7 @@ describe('ActivationTokenService', () => {
 
     it("lève une exception 'notFound' si le token n'existe pas ou est déjà utilisé", async () => {
       repo.findOne.mockResolvedValue(null);
+      // eslint-disable-next-line @typescript-eslint/unbound-method -- static method mocked via jest.mock
       const notFoundMock = jest.mocked(ExceptionFactory.notFound);
 
       await expect(service.consume('unknown-token')).rejects.toThrow(
@@ -241,7 +239,7 @@ describe('ActivationTokenService', () => {
 
       repo.findOne.mockResolvedValue(found);
       const businessConflictMock = jest.mocked(
-        ExceptionFactory.businessConflict,
+        ExceptionFactory.businessConflict('token', 'erreur avec le token'),
       );
 
       await expect(service.consume('expired-token')).rejects.toThrow(
