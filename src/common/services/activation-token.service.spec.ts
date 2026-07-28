@@ -215,8 +215,7 @@ describe('ActivationTokenService', () => {
 
     it("lève une exception 'notFound' si le token n'existe pas ou est déjà utilisé", async () => {
       repo.findOne.mockResolvedValue(null);
-      // eslint-disable-next-line @typescript-eslint/unbound-method -- static method mocked via jest.mock
-      const notFoundMock = jest.mocked(ExceptionFactory.notFound);
+      const notFoundMock = jest.mocked(ExceptionFactory.notFound); // eslint-disable-line @typescript-eslint/unbound-method -- static method mocked via jest.mock
 
       await expect(service.consume('unknown-token')).rejects.toThrow(
         'NotFound',
@@ -239,7 +238,7 @@ describe('ActivationTokenService', () => {
 
       repo.findOne.mockResolvedValue(found);
       const businessConflictMock = jest.mocked(
-        ExceptionFactory.businessConflict('token', 'erreur avec le token'),
+        ExceptionFactory.businessConflict, // eslint-disable-line @typescript-eslint/unbound-method -- static method mocked via jest.mock
       );
 
       await expect(service.consume('expired-token')).rejects.toThrow(
