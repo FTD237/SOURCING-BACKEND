@@ -51,6 +51,28 @@ describe('MailService', () => {
     );
   });
 
+  it('sends a account activation mail', async () => {
+    await service.sendAccountActivationMail(
+      'test@example.com',
+      'Jean',
+      'localhost:5473/activation/link',
+    );
+
+    expect(mailerService.sendMail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to: 'test@example.com',
+        subject: 'Bienvenue - Activez votre compte',
+        template: 'welcome',
+        context: {
+          nom: 'Jean',
+          lien_activation: 'localhost:5473/activation/link',
+          duree_validite: '24 heures',
+          annee: new Date().getFullYear(),
+        },
+      }),
+    );
+  });
+
   it('sends a password reset mail', async () => {
     await service.sendPasswordResetMail(
       'test@example.com',
