@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
@@ -13,6 +13,8 @@ import { Role } from '../entity/role.entity';
 import { ExceptionFactory } from '../common/exceptions/exception-factory';
 import { generatePassword } from '../common/utils/generate-password';
 import { Statut } from '../common/enum/statut.enum';
+import { ActivationTokenService } from '../common/services/activation-token.service';
+import { MailService } from '../mail/mail.service';
 
 @Injectable()
 export class EtudiantService {
@@ -20,11 +22,14 @@ export class EtudiantService {
     @InjectRepository(Etudiant)
     private readonly etudiantRepo: Repository<Etudiant>,
     @InjectRepository(User)
-    private userRepo: Repository<User>,
+    private readonly userRepo: Repository<User>,
     @InjectRepository(Role)
-    private roleRepo: Repository<Role>,
-    private dataSource: DataSource,
+    private readonly roleRepo: Repository<Role>,
+    private readonly dataSource: DataSource,
+    private readonly activationTokenService: ActivationTokenService,
+    private readonly mailService: MailService,
   ) {}
+  private readonly logger = new Logger(EtudiantService.name);
 
   async create(
     dto: CreateEtudiantDto,
@@ -53,6 +58,10 @@ export class EtudiantService {
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
+    let rawToken: string;
+    let savedUser: User;
+    let savedEtudiant: Etudiant;
+
     try {
       const generatedPassword = generatePassword();
       const hashedPassword = await bcrypt.hash(generatedPassword, 10);
@@ -65,11 +74,11 @@ export class EtudiantService {
         nom: dto.nom,
         prenom: dto.prenom,
         id_role: roleEtudiant.id,
-        statut: Statut.ACTIF,
+        statut: Statut.EN_ATTENTE_ACTIVATION,
         create_by: createdBy,
       });
 
-      const savedUser = await queryRunner.manager.save(user);
+      savedUser = await queryRunner.manager.save(user);
 
       const etudiant = queryRunner.manager.create(Etudiant, {
         userId: savedUser.id,
@@ -82,21 +91,40 @@ export class EtudiantService {
         create_by: createdBy,
       });
 
-      const savedEtudiant = await queryRunner.manager.save(etudiant);
+      savedEtudiant = await queryRunner.manager.save(etudiant);
+
+      rawToken = await this.activationTokenService.createAndSave(
+        savedUser.id,
+        queryRunner.manager,
+      );
 
       await queryRunner.commitTransaction();
-
-      return {
-        user: savedUser,
-        etudiant: savedEtudiant,
-        generatedPassword: generatedPassword,
-      };
     } catch (error) {
       await queryRunner.rollbackTransaction();
       ExceptionFactory.database(error, 'Etudiant');
     } finally {
       await queryRunner.release();
     }
+
+    try {
+      const lienActivation =
+        this.activationTokenService.buildActivationLink(rawToken);
+      await this.mailService.sendAccountActivationMail(
+        savedUser.email,
+        savedUser.nom,
+        lienActivation,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Échec de l'envoi de l'email d'activation à ${savedUser.email}`,
+        error,
+      );
+    }
+
+    return {
+      user: savedUser,
+      etudiant: savedEtudiant,
+    };
   }
 
   async findAll(): Promise<Etudiant[]> {
