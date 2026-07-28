@@ -9,7 +9,7 @@ import { ResetPasswordDto } from './dto/reset-password.dto';
 @ApiTags('Authentication')
 @Controller('api/auth')
 export class AuthController {
-  constructor(private authService: AuthService) {}
+  constructor(private readonly authService: AuthService) {}
 
   @Post('login')
   @ApiOperation({ summary: "Connexion d'un utilisateur" })
