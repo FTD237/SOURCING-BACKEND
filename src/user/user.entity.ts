@@ -63,7 +63,7 @@ export class User {
   @UpdateDateColumn()
   dte_modif: Date;
 
-  @Column({ default: Statut.ACTIF })
+  @Column({ default: Statut.ACTIF, type: 'enum', enum: Statut })
   statut: Statut;
 
   @Column({ nullable: true })
@@ -74,4 +74,10 @@ export class User {
 
   @Column({ nullable: true, type: 'varchar' })
   updated_by: string;
+
+  @Column({ nullable: true, type: 'varchar' })
+  resetPasswordToken: string | null;
+
+  @Column({ nullable: true, type: 'timestamp' })
+  resetPasswordExpires: Date | null;
 }

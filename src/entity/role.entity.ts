@@ -16,5 +16,4 @@ export class Role {
 
   @CreateDateColumn() dte_creation: Date;
   @UpdateDateColumn() dte_modif: Date;
-
 }
