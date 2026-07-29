@@ -4,7 +4,7 @@ import { Repository } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
-import * as crypto from 'crypto';
+import * as crypto from 'node:crypto';
 import { User } from '../user/user.entity';
 import { ExceptionFactory } from '../common/exceptions/exception-factory';
 import { MailService } from '../mail/mail.service';
@@ -72,8 +72,7 @@ export class AuthService {
     });
 
     if (
-      !user ||
-      !user.resetPasswordExpires ||
+      !user?.resetPasswordExpires ||
       user.resetPasswordExpires.getTime() < Date.now()
     ) {
       ExceptionFactory.badRequest('Token invalide ou expiré');
