@@ -30,7 +30,7 @@ export class Formation {
 
   @CreateDateColumn() dte_creation: Date;
   @UpdateDateColumn() dte_modif: Date;
-  @Column({ default: Statut.ACTIF }) statut: Statut;
+  @Column({ default: Statut.ACTIF, type: 'enum', enum: Statut }) statut: Statut;
   @Column({ nullable: true }) dte_suppression: Date;
   @Column({ nullable: true }) create_by: number;
   @Column({ nullable: true }) updated_by: number;
