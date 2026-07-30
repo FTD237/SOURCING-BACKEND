@@ -40,9 +40,9 @@ import { FileModule } from './file/file.module';
           ssl: isProduction,
           ...(isProduction && {
             extra: {
-              ssl: {
-                rejectUnauthorized: false,
-              },
+              ssl: process.env.DB_HOST?.includes('railway.internal')
+                ? false
+                : { rejectUnauthorized: true, ca: process.env.DB_SSL_CA },
             },
           }),
         };
