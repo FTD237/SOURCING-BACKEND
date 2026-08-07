@@ -67,7 +67,7 @@ export class CompanyService {
       relations: { user: true },
     });
     if (!company)
-      ExceptionFactory.notFound('Company', `Entreprises #${id} introuvable`);
+      ExceptionFactory.notFound('Company', `${id}`);
     return company;
   }
 

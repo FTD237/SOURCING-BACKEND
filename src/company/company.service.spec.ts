@@ -237,7 +237,7 @@ describe('CompanyService', () => {
 
       // Act & Assert
       await expect(service.findOne('invalid-id')).rejects.toThrow(
-        'Entreprises #invalid-id introuvable',
+        "Company avec l'ID invalid-id n'existe pas",
       );
     });
   });
@@ -276,7 +276,7 @@ describe('CompanyService', () => {
       // Act & Assert
       await expect(
         service.update('invalid-id', { country_code: 'BE' }, updateCurrentUser),
-      ).rejects.toThrow('Company #invalid-id not found');
+      ).rejects.toThrow("Company avec l'ID invalid-id n'existe pas");
     });
   });
 
