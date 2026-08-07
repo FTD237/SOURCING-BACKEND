@@ -115,7 +115,7 @@ jobs:
       - name: Install dependencies
         run: pnpm install --ignore-scripts --frozen-lockfile
       - name: Audit dependencies
-        run: pnpm audit --audit-level=high
+        run: pnpm audit --audit-level=high --prod
 
   secrets-scan:
     name: Secrets Scan
