@@ -110,7 +110,9 @@ describe('CompanyService', () => {
         'rh',
         expect.any(String),
       );
-      expect(accountCreationService.createUserWithActivation).toHaveBeenCalledWith(
+      expect(
+        accountCreationService.createUserWithActivation,
+      ).toHaveBeenCalledWith(
         expect.objectContaining({
           email: mockCreateDto.email,
           nom: mockCreateDto.nom,
@@ -130,11 +132,11 @@ describe('CompanyService', () => {
 
       // Assert : on récupère le callback passé à createUserWithActivation
       // et on vérifie qu'il crée bien la Company avec les bons champs.
-      const [, createBusinessEntity] =
-        accountCreationService.createUserWithActivation.mock.calls[0] as [
-          unknown,
-          (manager: unknown, savedUser: User) => Promise<Company>,
-        ];
+      const [, createBusinessEntity] = accountCreationService
+        .createUserWithActivation.mock.calls[0] as [
+        unknown,
+        (manager: unknown, savedUser: User) => Promise<Company>,
+      ];
 
       const managerCreate = jest
         .fn()
@@ -169,7 +171,9 @@ describe('CompanyService', () => {
       ).rejects.toThrow(
         `Un utilisateur avec l'email ${mockCreateDto.email} existe déjà`,
       );
-      expect(accountCreationService.createUserWithActivation).not.toHaveBeenCalled();
+      expect(
+        accountCreationService.createUserWithActivation,
+      ).not.toHaveBeenCalled();
     });
 
     it('should propagate the error when the role does not exist', async () => {
@@ -182,7 +186,9 @@ describe('CompanyService', () => {
       await expect(
         service.create(mockCreateDto, mockCurrentUser),
       ).rejects.toThrow('Le rôle "rh" n\'existe pas');
-      expect(accountCreationService.createUserWithActivation).not.toHaveBeenCalled();
+      expect(
+        accountCreationService.createUserWithActivation,
+      ).not.toHaveBeenCalled();
     });
   });
 
