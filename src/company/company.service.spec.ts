@@ -2,19 +2,12 @@
 
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { DataSource } from 'typeorm';
-import * as bcrypt from 'bcrypt';
 import { CompanyService } from './company.service';
 import { Company } from './company.entity';
 import { User } from '../user/user.entity';
-import { Role } from '../entity/role.entity';
 import { CreateCompanyDto } from './company.dto';
 import { Statut } from '../common/enum/statut.enum';
-import { Roles } from '../common/enum/roles.enum';
-import { ActivationTokenService } from '../common/services/activation-token.service';
-import { MailService } from '../mail/mail.service';
-
-jest.mock('bcrypt');
+import { AccountCreationService } from '../common/services/account-creation.service';
 
 interface MockCompanyRepository {
   find: jest.Mock;
@@ -24,58 +17,16 @@ interface MockCompanyRepository {
   create: jest.Mock;
 }
 
-interface MockUserRepository {
-  findOne: jest.Mock;
-  update: jest.Mock;
+interface MockAccountCreationService {
+  checkEmailAvailable: jest.Mock;
+  findRoleOrFail: jest.Mock;
+  createUserWithActivation: jest.Mock;
 }
-
-interface MockRoleRepository {
-  findOne: jest.Mock;
-}
-
-interface MockEntityManager {
-  create: jest.Mock;
-  save: jest.Mock;
-}
-
-interface MockQueryRunner {
-  connect: jest.Mock;
-  startTransaction: jest.Mock;
-  commitTransaction: jest.Mock;
-  rollbackTransaction: jest.Mock;
-  release: jest.Mock;
-  manager: MockEntityManager;
-}
-
-interface MockDataSource {
-  createQueryRunner: jest.Mock;
-}
-
-interface MockActivationTokenService {
-  createAndSave: jest.Mock;
-  buildActivationLink: jest.Mock;
-}
-
-interface MockMailService {
-  sendAccountActivationMail: jest.Mock;
-}
-
-// Forme minimale utilisée par manager.save pour distinguer user vs company
-type SavedEntity = Partial<User> & Partial<Company> & { email?: string };
 
 describe('CompanyService', () => {
   let service: CompanyService;
   let companyRepository: MockCompanyRepository;
-  let userRepository: MockUserRepository;
-  let roleRepository: MockRoleRepository;
-  let dataSource: MockDataSource;
-  let queryRunner: MockQueryRunner;
-  let activationTokenService: MockActivationTokenService;
-  let mailService: MockMailService;
-
-  const mockRawToken = 'raw-activation-token';
-  const mockActivationLink =
-    'https://app.example.com/activate?token=raw-activation-token';
+  let accountCreationService: MockAccountCreationService;
 
   const mockCurrentUser = { id: 'user-1', name: 'Admin User' };
 
@@ -86,26 +37,22 @@ describe('CompanyService', () => {
     country_code: 'FR',
   };
 
-  const mockRole = {
-    id: 'role-1',
-    nom: Roles.RH,
-  };
+  const mockRole = { id: 'role-1', nom: 'rh' };
 
-  const mockUser = {
-    id: 'user-1',
+  const mockUser: Partial<User> = {
+    id: 'user-2',
     email: 'jean@techcorp.com',
     nom: 'Tech Corp',
     prenom: 'Jean',
-    password: 'hashed_password',
-    statut: Statut.ACTIF,
+    statut: Statut.EN_ATTENTE_ACTIVATION,
   };
 
-  const mockCompany = {
+  const mockCompany: Partial<Company> = {
     id: 'company-1',
-    user_id: 'user-1',
+    user_id: 'user-2',
     country_code: 'FR',
     statut: Statut.ACTIF,
-    user: mockUser,
+    user: mockUser as User,
   };
 
   beforeEach(async () => {
@@ -119,45 +66,14 @@ describe('CompanyService', () => {
       create: jest.fn().mockImplementation((data: unknown) => data),
     };
 
-    userRepository = {
-      findOne: jest.fn().mockResolvedValue(null),
-      update: jest.fn().mockResolvedValue({}),
-    };
-
-    roleRepository = {
-      findOne: jest.fn().mockResolvedValue(mockRole),
-    };
-
-    queryRunner = {
-      connect: jest.fn().mockResolvedValue(undefined),
-      startTransaction: jest.fn().mockResolvedValue(undefined),
-      commitTransaction: jest.fn().mockResolvedValue(undefined),
-      rollbackTransaction: jest.fn().mockResolvedValue(undefined),
-      release: jest.fn().mockResolvedValue(undefined),
-      manager: {
-        create: jest
-          .fn()
-          .mockImplementation((_entity: unknown, data: unknown) => data),
-        save: jest.fn().mockImplementation((entity: SavedEntity) => {
-          if (entity.email) {
-            return Promise.resolve({ ...mockUser, ...entity });
-          }
-          return Promise.resolve({ ...mockCompany, ...entity });
-        }),
-      },
-    };
-
-    dataSource = {
-      createQueryRunner: jest.fn().mockReturnValue(queryRunner),
-    };
-
-    activationTokenService = {
-      createAndSave: jest.fn().mockResolvedValue(mockRawToken),
-      buildActivationLink: jest.fn().mockReturnValue(mockActivationLink),
-    };
-
-    mailService = {
-      sendAccountActivationMail: jest.fn().mockResolvedValue(undefined),
+    accountCreationService = {
+      checkEmailAvailable: jest.fn().mockResolvedValue(undefined),
+      findRoleOrFail: jest.fn().mockResolvedValue(mockRole),
+      createUserWithActivation: jest.fn().mockResolvedValue({
+        user: mockUser,
+        entity: mockCompany,
+        rawToken: 'raw-activation-token',
+      }),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -168,31 +84,13 @@ describe('CompanyService', () => {
           useValue: companyRepository,
         },
         {
-          provide: getRepositoryToken(User),
-          useValue: userRepository,
-        },
-        {
-          provide: getRepositoryToken(Role),
-          useValue: roleRepository,
-        },
-        {
-          provide: DataSource,
-          useValue: dataSource,
-        },
-        {
-          provide: ActivationTokenService,
-          useValue: activationTokenService,
-        },
-        {
-          provide: MailService,
-          useValue: mailService,
+          provide: AccountCreationService,
+          useValue: accountCreationService,
         },
       ],
     }).compile();
 
     service = module.get<CompanyService>(CompanyService);
-
-    (bcrypt.hash as jest.Mock).mockResolvedValue('hashed_password');
   });
 
   // -------------------------------------------------------------------------
@@ -200,49 +98,70 @@ describe('CompanyService', () => {
   // -------------------------------------------------------------------------
   describe('create', () => {
     it('should create a company successfully', async () => {
-      // Arrange
-      userRepository.findOne.mockResolvedValue(null);
-      roleRepository.findOne.mockResolvedValue(mockRole);
       // Act
       const result = await service.create(mockCreateDto, mockCurrentUser);
 
       // Assert
-      expect(result).toHaveProperty('user');
-      expect(result).toHaveProperty('company');
-      expect(queryRunner.commitTransaction).toHaveBeenCalled();
-      expect(activationTokenService.createAndSave).toHaveBeenCalledWith(
-        expect.any(String),
-        queryRunner.manager,
+      expect(accountCreationService.checkEmailAvailable).toHaveBeenCalledWith(
+        mockCreateDto.email,
+        'Company',
       );
-      expect(activationTokenService.buildActivationLink).toHaveBeenCalledWith(
-        mockRawToken,
-      );
-      expect(mailService.sendAccountActivationMail).toHaveBeenCalledWith(
+      expect(accountCreationService.findRoleOrFail).toHaveBeenCalledWith(
+        'rh',
         expect.any(String),
-        expect.any(String),
-        mockActivationLink,
       );
+      expect(accountCreationService.createUserWithActivation).toHaveBeenCalledWith(
+        expect.objectContaining({
+          email: mockCreateDto.email,
+          nom: mockCreateDto.nom,
+          prenom: mockCreateDto.prenom,
+          roleId: mockRole.id,
+          createdBy: mockCurrentUser.id,
+          contextEntity: 'Company',
+        }),
+        expect.any(Function),
+      );
+      expect(result).toEqual({ user: mockUser, company: mockCompany });
     });
 
-    it('should not throw when activation email sending fails', async () => {
-      // Arrange
-      userRepository.findOne.mockResolvedValue(null);
-      roleRepository.findOne.mockResolvedValue(mockRole);
-      mailService.sendAccountActivationMail.mockRejectedValue(
-        new Error('SMTP unreachable'),
-      );
-
+    it('should invoke the business-entity factory with the correct Company payload', async () => {
       // Act
-      const result = await service.create(mockCreateDto, mockCurrentUser);
+      await service.create(mockCreateDto, mockCurrentUser);
 
-      // Assert : la création réussit malgré l'échec d'envoi d'email
-      expect(result).toHaveProperty('user');
-      expect(queryRunner.commitTransaction).toHaveBeenCalled();
+      // Assert : on récupère le callback passé à createUserWithActivation
+      // et on vérifie qu'il crée bien la Company avec les bons champs.
+      const [, createBusinessEntity] =
+        accountCreationService.createUserWithActivation.mock.calls[0] as [
+          unknown,
+          (manager: unknown, savedUser: User) => Promise<Company>,
+        ];
+
+      const managerCreate = jest
+        .fn()
+        .mockImplementation((_entity: unknown, data: Partial<Company>) => data);
+      const managerSave = jest.fn().mockResolvedValue(mockCompany);
+      const fakeManager = { create: managerCreate, save: managerSave };
+
+      await createBusinessEntity(fakeManager, mockUser as User);
+
+      expect(managerCreate).toHaveBeenCalledWith(
+        Company,
+        expect.objectContaining({
+          user_id: mockUser.id,
+          country_code: mockCreateDto.country_code,
+          statut: Statut.ACTIF,
+          create_by: mockCurrentUser.id,
+        }),
+      );
+      expect(managerSave).toHaveBeenCalled();
     });
 
-    it('should throw BusinessConflictException when email already exists', async () => {
+    it('should propagate the error when the email already exists', async () => {
       // Arrange
-      userRepository.findOne.mockResolvedValue(mockUser);
+      const error = new Error(
+        `Un utilisateur avec l'email ${mockCreateDto.email} existe déjà`,
+      );
+      accountCreationService.checkEmailAvailable.mockRejectedValue(error);
 
       // Act & Assert
       await expect(
@@ -250,19 +169,20 @@ describe('CompanyService', () => {
       ).rejects.toThrow(
         `Un utilisateur avec l'email ${mockCreateDto.email} existe déjà`,
       );
-      expect(queryRunner.commitTransaction).not.toHaveBeenCalled();
+      expect(accountCreationService.createUserWithActivation).not.toHaveBeenCalled();
     });
 
-    it('should throw BusinessConflictException when role does not exist', async () => {
+    it('should propagate the error when the role does not exist', async () => {
       // Arrange
-      userRepository.findOne.mockResolvedValue(null);
-      roleRepository.findOne.mockResolvedValue(null);
+      accountCreationService.findRoleOrFail.mockRejectedValue(
+        new Error('Le rôle "rh" n\'existe pas'),
+      );
 
       // Act & Assert
       await expect(
         service.create(mockCreateDto, mockCurrentUser),
       ).rejects.toThrow('Le rôle "rh" n\'existe pas');
-      expect(queryRunner.commitTransaction).not.toHaveBeenCalled();
+      expect(accountCreationService.createUserWithActivation).not.toHaveBeenCalled();
     });
   });
 
@@ -350,7 +270,7 @@ describe('CompanyService', () => {
       // Act & Assert
       await expect(
         service.update('invalid-id', { country_code: 'BE' }, updateCurrentUser),
-      ).rejects.toThrow("Company avec l'ID invalid-id n'existe pas");
+      ).rejects.toThrow('Company #invalid-id not found');
     });
   });
 
@@ -361,6 +281,7 @@ describe('CompanyService', () => {
     const removeCurrentUser = { id: 'user-1', email: 'admin@test.com' };
 
     it('should soft delete a company successfully', async () => {
+      // Arrange
       const findOneSpy = jest
         .spyOn(service, 'findOne')
         .mockResolvedValue(mockCompany as unknown as Company);
