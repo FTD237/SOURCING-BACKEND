@@ -13,7 +13,7 @@ interface JwtPayload {
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor(private readonly configService: ConfigService) {
+  constructor(configService: ConfigService) {
     const secret = configService.get<string>('JWT_SECRET');
 
     if (!secret) {
@@ -30,7 +30,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     super(options);
   }
 
-  validate(req: Request, payload: JwtPayload) {
+  validate(payload: JwtPayload) {
     return { id: payload.id, email: payload.email, role: payload.role };
   }
 }

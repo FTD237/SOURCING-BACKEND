@@ -13,6 +13,7 @@ import {
 } from './company.dto';
 import { generatePassword } from '../common/utils/generate-password';
 import { Statut } from '../common/enum/statut.enum';
+import { Roles } from '../common/enum/roles.enum';
 
 @Injectable()
 export class CompanyService {
@@ -23,7 +24,7 @@ export class CompanyService {
     private readonly userRepository: Repository<User>,
     @InjectRepository(Role)
     private readonly roleRepository: Repository<Role>,
-    private dataSource: DataSource,
+    private readonly dataSource: DataSource,
   ) {}
 
   async create(
@@ -41,7 +42,7 @@ export class CompanyService {
       );
 
     const roleCompany = await this.roleRepository.findOne({
-      where: { nom: 'rh' },
+      where: { nom: Roles.RH },
     });
 
     if (!roleCompany) {
