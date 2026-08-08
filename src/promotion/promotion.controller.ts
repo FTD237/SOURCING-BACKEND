@@ -83,7 +83,7 @@ export class PromotionController {
           example: '2025',
           minLength: 4,
           maxLength: 4,
-          pattern: '^\\d{4}$',
+          pattern: String.raw`^\d{4}$`,
         },
       },
     },

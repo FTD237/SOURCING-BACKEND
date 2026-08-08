@@ -37,7 +37,7 @@ import {
 /**
  * Gère le cycle de vie des entreprises (création, consultation, mise à jour,
  * suppression logique). Toutes les routes exigent un JWT valide ; l'accès à
- * chaque route est en plus restreint par rôle via `RolesGuard`.
+ * chaque route est en plus restreint par rôle via `RolesGuard'.
  */
 @ApiTags('Company')
 @Controller('company')
@@ -50,7 +50,7 @@ export class CompanyController {
    *
    * @param dto - Informations de l'entreprise et de l'utilisateur à créer.
    * @param currentUser - Utilisateur authentifié à l'origine de la création
-   * (utilisé pour la traçabilité, ex. `create_by`).
+   * (utilisé pour la traçabilité, ex). 'create_by').
    * @returns L'utilisateur et l'entreprise nouvellement créés.
    * @throws ConflictException si l'email existe déjà (409).
    * @throws BadRequestException si les données fournies sont invalides (400).
@@ -146,19 +146,13 @@ export class CompanyController {
    * @param id - Identifiant UUID de l'entreprise à modifier.
    * @param dto - Champs à mettre à jour (partiels).
    * @param currentUser - Utilisateur authentifié à l'origine de la modification
-   * (utilisé pour la traçabilité, ex. `updated_by`).
+   * (utilisé pour la traçabilité, ex.) `updated_by`).
    * @returns L'entreprise mise à jour.
    * @throws NotFoundException si aucune entreprise ne correspond à `id` (404).
    * @throws BadRequestException si les données fournies sont invalides (400).
    */
   @Put(':id')
-  @Roles(
-    RolesEnum.ETUDIANT,
-    RolesEnum.ADMIN,
-    RolesEnum.SUPERADMIN,
-    RolesEnum.MANAGER,
-    RolesEnum.RH,
-  )
+  @Roles(RolesEnum.ADMIN, RolesEnum.SUPERADMIN, RolesEnum.RH)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: "Modifier les informations de l'entreprise",
@@ -190,7 +184,7 @@ export class CompanyController {
    * @throws NotFoundException si aucune entreprise ne correspond à `id` (404).
    */
   @Delete(':id')
-  @Roles(RolesEnum.MANAGER, RolesEnum.ADMIN, RolesEnum.SUPERADMIN)
+  @Roles(RolesEnum.ADMIN, RolesEnum.SUPERADMIN)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: 'Supprimer une entreprise',
