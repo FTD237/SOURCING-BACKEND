@@ -66,8 +66,7 @@ export class CompanyService {
       where: { id },
       relations: { user: true },
     });
-    if (!company)
-      ExceptionFactory.notFound('Company', `${id}`);
+    if (!company) ExceptionFactory.notFound('Company', `${id}`);
     return company;
   }
 

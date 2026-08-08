@@ -8,10 +8,7 @@ import { Country } from '../entity/country.entity';
 import { CommonModule } from '../common/common.module';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([Company, Country]),
-    CommonModule,
-  ],
+  imports: [TypeOrmModule.forFeature([Company, Country]), CommonModule],
   controllers: [CompanyController],
   providers: [CompanyService],
 })
