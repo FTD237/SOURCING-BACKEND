@@ -24,7 +24,7 @@ export class CompanyService {
 
   async create(
     dto: CreateCompanyDto,
-    currentUser: { id: string; name: string },
+    currentUser: { id: string; email: string },
   ): Promise<CreateCompanyResponseDto> {
     await this.accountCreationService.checkEmailAvailable(dto.email, 'Company');
 

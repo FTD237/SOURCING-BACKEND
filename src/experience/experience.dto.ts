@@ -2,9 +2,9 @@
 import {
   IsDateString,
   IsNotEmpty,
-  IsNumber,
   IsOptional,
   IsString,
+  IsUUID,
 } from 'class-validator';
 import { PartialType } from '@nestjs/mapped-types';
 import { ApiProperty } from '@nestjs/swagger';
@@ -15,22 +15,24 @@ export class CreateExperienceDto {
     example: '1aec5bef-7a21-47d1-b7f5-c2a3e1b57023',
     description: "Id de l'étudiant",
   })
-  @IsNumber()
+  @IsUUID()
   student_id: string;
 
   @ApiProperty({
     example: '1aec5bef-7a21-47d1-b7f5-c2a3e1b57023',
     description: "ID de l'entreprise",
+    required: false,
   })
-  @IsNumber()
+  @IsUUID()
   @IsOptional()
   company_id?: string;
 
   @ApiProperty({
     example: '1aec5bef-7a21-47d1-b7f5-c2a3e1b57023',
     description: 'ID du RH',
+    required: false,
   })
-  @IsNumber()
+  @IsUUID()
   @IsOptional()
   rh_id?: string;
 
@@ -45,6 +47,7 @@ export class CreateExperienceDto {
   @ApiProperty({
     example: 'Stage de 5eme année au cours duquel...',
     description: "Description de l'expérience",
+    required: false,
   })
   @IsString()
   @IsOptional()
@@ -53,22 +56,25 @@ export class CreateExperienceDto {
   @ApiProperty({
     example: 'Stage académique',
     description: "Type de l'expérience",
+    required: false,
   })
   @IsString()
   @IsOptional()
   type?: string;
 
   @ApiProperty({
-    example: '17/11/2025',
-    description: 'Date de début',
+    example: '2025-11-17',
+    description: 'Date de début (format ISO 8601)',
+    required: false,
   })
   @IsDateString()
   @IsOptional()
   date_debut?: string;
 
   @ApiProperty({
-    example: '17/11/2025',
-    description: 'date de fin',
+    example: '2025-11-17',
+    description: 'Date de fin (format ISO 8601)',
+    required: false,
   })
   @IsDateString()
   @IsOptional()
@@ -78,7 +84,8 @@ export class CreateExperienceDto {
 export class UpdateExperienceDto extends PartialType(CreateExperienceDto) {
   @ApiProperty({
     example: Statut.ACTIF,
-    description: 'statut',
+    description: 'Statut',
+    required: false,
   })
   @IsOptional()
   statut?: Statut;
