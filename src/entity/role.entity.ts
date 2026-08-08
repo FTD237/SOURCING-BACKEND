@@ -1,19 +1,19 @@
-import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Column,
-  CreateDateColumn,
-  UpdateDateColumn,
-} from 'typeorm';
+import { Entity, Column } from 'typeorm';
+import { ApiProperty } from '@nestjs/swagger';
+import { Roles } from '../common/enum/roles.enum';
+import { BaseEntity } from './base.entity';
 
 @Entity('role')
-export class Role {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
-
-  @Column()
-  nom: string;
-
-  @CreateDateColumn() dte_creation: Date;
-  @UpdateDateColumn() dte_modif: Date;
+export class Role extends BaseEntity {
+  @ApiProperty({
+    enum: Roles,
+    enumName: 'Roles',
+    description: 'Nom du rôle',
+    example: Roles.ETUDIANT,
+  })
+  @Column({
+    type: 'enum',
+    enum: Roles,
+  })
+  nom: Roles;
 }

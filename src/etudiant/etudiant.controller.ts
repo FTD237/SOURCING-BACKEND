@@ -1,13 +1,13 @@
 import {
-  Controller,
-  Get,
-  Post,
-  Put,
-  Delete,
-  Param,
   Body,
+  Controller,
+  Delete,
+  Get,
   HttpCode,
   HttpStatus,
+  Param,
+  Post,
+  Put,
   UseGuards,
 } from '@nestjs/common';
 import { EtudiantService } from './etudiant.service';
@@ -18,8 +18,8 @@ import {
 } from './etudiant.dto';
 import {
   ApiBearerAuth,
+  ApiBody,
   ApiOperation,
-  ApiParam,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
@@ -27,6 +27,7 @@ import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { GetUser } from '../auth/get-user.decorator';
 import { RolesGuard } from '../guards/roles.guard';
 import { Roles } from '../decorators/roles.decorator';
+import { Roles as RolesEnum } from '../common/enum/roles.enum';
 
 @ApiTags('Etudiant')
 @Controller('etudiants')
@@ -35,7 +36,7 @@ export class EtudiantController {
   constructor(private readonly etudiantService: EtudiantService) {}
 
   @Post()
-  @Roles('admin', 'manager', 'super-admin')
+  @Roles(RolesEnum.ADMIN, RolesEnum.MANAGER, RolesEnum.SUPERADMIN)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: 'Créer un étudiant (utilisateur + profil)',
@@ -57,7 +58,7 @@ export class EtudiantController {
   }
 
   @Get()
-  @Roles('rh', 'manager', 'admin', 'super-admin')
+  @Roles(RolesEnum.RH, RolesEnum.MANAGER, RolesEnum.ADMIN, RolesEnum.SUPERADMIN)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Get all etudiant' })
   @ApiResponse({
@@ -69,7 +70,7 @@ export class EtudiantController {
   }
 
   @Get(':id')
-  @Roles('rh', 'manager', 'admin', 'super-admin')
+  @Roles(RolesEnum.RH, RolesEnum.MANAGER, RolesEnum.ADMIN, RolesEnum.SUPERADMIN)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Récupérer un étudiant grâce à son id' })
   @ApiResponse({
@@ -81,10 +82,15 @@ export class EtudiantController {
   }
 
   @Put(':id')
-  @Roles('etudiant', 'admin', 'super-admin', 'manager')
+  @Roles(
+    RolesEnum.ETUDIANT,
+    RolesEnum.ADMIN,
+    RolesEnum.SUPERADMIN,
+    RolesEnum.MANAGER,
+  )
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: "Modifier les informations d'un étudiant" })
-  @ApiParam(UpdateEtudiantDto)
+  @ApiBody({ type: UpdateEtudiantDto })
   update(
     @Param('id') id: string,
     @Body() dto: UpdateEtudiantDto,
@@ -94,7 +100,7 @@ export class EtudiantController {
   }
 
   @Delete(':id')
-  @Roles('manager', 'admin', 'super-admin')
+  @Roles(RolesEnum.MANAGER, RolesEnum.ADMIN, RolesEnum.SUPERADMIN)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Supprimer un étudiant' })
   @HttpCode(HttpStatus.NO_CONTENT)

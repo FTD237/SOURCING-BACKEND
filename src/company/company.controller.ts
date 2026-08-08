@@ -1,13 +1,13 @@
 import {
-  Controller,
-  Get,
-  Post,
-  Put,
-  Delete,
-  Param,
   Body,
+  Controller,
+  Delete,
+  Get,
   HttpCode,
   HttpStatus,
+  Param,
+  Post,
+  Put,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -20,23 +20,24 @@ import {
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { GetUser } from '../auth/get-user.decorator';
 import { RolesGuard } from '../guards/roles.guard';
-import { Roles } from '../decorators/roles.decorator';
+import { Roles as RolesEnum } from '../common/enum/roles.enum';
 import { CompanyService } from './company.service';
 import {
   CreateCompanyDto,
   CreateCompanyResponseDto,
   UpdateCompanyDto,
 } from './company.dto';
+import { Roles } from '../decorators/roles.decorator';
 
 @ApiTags('Company')
 @Controller('company')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class CompanyController {
-  constructor(private companyService: CompanyService) {}
+  constructor(private readonly companyService: CompanyService) {}
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @Roles('admin', 'manager', 'super-admin')
+  @Roles(RolesEnum.ADMIN, RolesEnum.MANAGER, RolesEnum.SUPERADMIN)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: 'Créer une entreprise',
@@ -57,7 +58,12 @@ export class CompanyController {
   }
 
   @Get()
-  @Roles('admin', 'manager', 'super-admin', 'etudiant')
+  @Roles(
+    RolesEnum.ADMIN,
+    RolesEnum.SUPERADMIN,
+    RolesEnum.MANAGER,
+    RolesEnum.ETUDIANT,
+  )
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Get all company' })
   @ApiResponse({
@@ -69,7 +75,12 @@ export class CompanyController {
   }
 
   @Get(':id')
-  @Roles('admin', 'manager', 'super-admin', 'etudiant')
+  @Roles(
+    RolesEnum.ADMIN,
+    RolesEnum.MANAGER,
+    RolesEnum.SUPERADMIN,
+    RolesEnum.ETUDIANT,
+  )
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Récupérer une entreprise grâce à son id' })
   @ApiResponse({
@@ -81,7 +92,13 @@ export class CompanyController {
   }
 
   @Put(':id')
-  @Roles('etudiant', 'admin', 'super-admin', 'manager', 'rh')
+  @Roles(
+    RolesEnum.ETUDIANT,
+    RolesEnum.ADMIN,
+    RolesEnum.SUPERADMIN,
+    RolesEnum.MANAGER,
+    RolesEnum.RH,
+  )
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: "Modifier les informations de l'entreprise" })
   @ApiParam(UpdateCompanyDto)
@@ -94,7 +111,7 @@ export class CompanyController {
   }
 
   @Delete(':id')
-  @Roles('manager', 'admin', 'super-admin')
+  @Roles(RolesEnum.MANAGER, RolesEnum.ADMIN, RolesEnum.SUPERADMIN)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Supprimer une entreprise' })
   @HttpCode(HttpStatus.NO_CONTENT)

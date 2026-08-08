@@ -24,13 +24,16 @@ import { UserService } from './user.service';
 import { UserResponseDto } from './dto/user-response.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { CreateUserDto } from './dto/create-user.dto';
+import { RolesGuard } from '../guards/roles.guard';
+import { Roles } from '../decorators/roles.decorator';
+import { Roles as RoleEnum } from '../common/enum/roles.enum';
 
 @ApiTags('Users')
 @Controller('users')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(RoleEnum.ADMIN)
 export class UserController {
   constructor(private readonly userService: UserService) {}
-
-  @UseGuards(JwtAuthGuard)
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @ApiBearerAuth('JWT-auth')
@@ -45,7 +48,6 @@ export class UserController {
     return this.userService.create(dto);
   }
 
-  @UseGuards(JwtAuthGuard)
   @Get()
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Get all user' })
@@ -58,7 +60,6 @@ export class UserController {
     return this.userService.findAll();
   }
 
-  @UseGuards(JwtAuthGuard)
   @Get(':id')
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Récupérer un utilisateur par son ID' })
@@ -89,6 +90,5 @@ export class UserController {
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id', ParseIntPipe) id: string) {
     return this.userService.remove(id);
-    // TODO : remplacer ça par un soft delete en prod
   }
 }
