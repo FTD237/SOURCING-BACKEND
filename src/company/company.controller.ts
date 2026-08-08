@@ -49,8 +49,8 @@ export class CompanyController {
    * @param currentUser - Utilisateur authentifié à l'origine de la création
    * (utilisé pour la traçabilité, ex. `create_by`).
    * @returns L'utilisateur et l'entreprise nouvellement créés.
-   * @throws {ConflictException} Si l'email existe déjà (409).
-   * @throws {BadRequestException} Si les données fournies sont invalides (400).
+   * @throws ConflictException si l'email existe déjà (409).
+   * @throws BadRequestException si les données fournies sont invalides (400).
    */
   @Post()
   @HttpCode(HttpStatus.CREATED)
@@ -118,7 +118,7 @@ export class CompanyController {
    *
    * @param id - Identifiant UUID de l'entreprise.
    * @returns L'entreprise correspondante.
-   * @throws {NotFoundException} Si aucune entreprise ne correspond à `id` (404).
+   * @throws NotFoundException si aucune entreprise ne correspond à `id` (404).
    */
   @Get(':id')
   @Roles(
@@ -158,8 +158,8 @@ export class CompanyController {
    * @param currentUser - Utilisateur authentifié à l'origine de la modification
    * (utilisé pour la traçabilité, ex. `updated_by`).
    * @returns L'entreprise mise à jour.
-   * @throws {NotFoundException} Si aucune entreprise ne correspond à `id` (404).
-   * @throws {BadRequestException} Si les données fournies sont invalides (400).
+   * @throws NotFoundException si aucune entreprise ne correspond à `id` (404).
+   * @throws BadRequestException si les données fournies sont invalides (400).
    */
   @Put(':id')
   @Roles(
@@ -204,7 +204,7 @@ export class CompanyController {
    * @param id - Identifiant UUID de l'entreprise à supprimer.
    * @param currentUser - Utilisateur authentifié à l'origine de la suppression
    * (utilisé pour la traçabilité).
-   * @throws {NotFoundException} Si aucune entreprise ne correspond à `id` (404).
+   * @throws NotFoundException si aucune entreprise ne correspond à `id` (404).
    */
   @Delete(':id')
   @Roles(RolesEnum.MANAGER, RolesEnum.ADMIN, RolesEnum.SUPERADMIN)
