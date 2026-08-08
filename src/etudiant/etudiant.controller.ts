@@ -20,7 +20,6 @@ import {
   ApiBearerAuth,
   ApiBody,
   ApiOperation,
-  ApiParam,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
@@ -30,6 +29,10 @@ import { RolesGuard } from '../guards/roles.guard';
 import { Roles } from '../decorators/roles.decorator';
 import { Roles as RolesEnum } from '../common/enum/roles.enum';
 import { Etudiant } from './etudiant.entity';
+import {
+  ApiCrudErrorResponses,
+  ApiUuidParam,
+} from '../decorators/api-common-response.decorator';
 
 /**
  * Gère le cycle de vie des étudiants (création, consultation, mise à jour,
@@ -69,13 +72,7 @@ export class EtudiantController {
     description: 'Étudiant créé avec succès',
     type: CreateEtudiantResponseDto,
   })
-  @ApiResponse({ status: 400, description: 'Données invalides' })
-  @ApiResponse({ status: 401, description: 'Authentification requise' })
-  @ApiResponse({
-    status: 403,
-    description: 'Rôle insuffisant pour créer un étudiant',
-  })
-  @ApiResponse({ status: 409, description: 'Email déjà existant' })
+  @ApiCrudErrorResponses({ badRequest: true, conflict: 'Email déjà existant' })
   create(
     @Body() dto: CreateEtudiantDto,
     @GetUser() currentUser: { id: string; email: string },
@@ -103,8 +100,7 @@ export class EtudiantController {
     type: Etudiant,
     isArray: true,
   })
-  @ApiResponse({ status: 401, description: 'Authentification requise' })
-  @ApiResponse({ status: 403, description: 'Rôle insuffisant' })
+  @ApiCrudErrorResponses()
   findAll(): Promise<Etudiant[]> {
     return this.etudiantService.findAll();
   }
@@ -124,19 +120,13 @@ export class EtudiantController {
     description:
       "Retourne les détails complets d'un étudiant à partir de son UUID.",
   })
-  @ApiParam({
-    name: 'id',
-    description: "UUID de l'étudiant à récupérer",
-    format: 'uuid',
-  })
+  @ApiUuidParam('id', "UUID de l'étudiant à récupérer")
   @ApiResponse({
     status: 200,
     description: 'Étudiant trouvé',
     type: Etudiant,
   })
-  @ApiResponse({ status: 401, description: 'Authentification requise' })
-  @ApiResponse({ status: 403, description: 'Rôle insuffisant' })
-  @ApiResponse({ status: 404, description: 'Étudiant introuvable' })
+  @ApiCrudErrorResponses({ notFound: 'Étudiant' })
   findOne(@Param('id') id: string): Promise<Etudiant> {
     return this.etudiantService.findOne(id);
   }
@@ -165,21 +155,14 @@ export class EtudiantController {
     description:
       "Met à jour partiellement les informations d'un étudiant existant.",
   })
-  @ApiParam({
-    name: 'id',
-    description: "UUID de l'étudiant à modifier",
-    format: 'uuid',
-  })
+  @ApiUuidParam('id', "UUID de l'étudiant à modifier")
   @ApiBody({ type: UpdateEtudiantDto })
   @ApiResponse({
     status: 200,
     description: 'Étudiant mis à jour avec succès',
     type: Etudiant,
   })
-  @ApiResponse({ status: 400, description: 'Données invalides' })
-  @ApiResponse({ status: 401, description: 'Authentification requise' })
-  @ApiResponse({ status: 403, description: 'Rôle insuffisant' })
-  @ApiResponse({ status: 404, description: 'Étudiant introuvable' })
+  @ApiCrudErrorResponses({ badRequest: true, notFound: 'Étudiant' })
   update(
     @Param('id') id: string,
     @Body() dto: UpdateEtudiantDto,
@@ -205,19 +188,13 @@ export class EtudiantController {
       'Supprime logiquement un étudiant (statut + date de suppression). ' +
       'Réservé aux rôles MANAGER, ADMIN et SUPERADMIN.',
   })
-  @ApiParam({
-    name: 'id',
-    description: "UUID de l'étudiant à supprimer",
-    format: 'uuid',
-  })
+  @ApiUuidParam('id', "UUID de l'étudiant à supprimer")
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiResponse({
     status: 204,
     description: 'Étudiant supprimé avec succès',
   })
-  @ApiResponse({ status: 401, description: 'Authentification requise' })
-  @ApiResponse({ status: 403, description: 'Rôle insuffisant' })
-  @ApiResponse({ status: 404, description: 'Étudiant introuvable' })
+  @ApiCrudErrorResponses({ notFound: 'Étudiant' })
   remove(
     @Param('id') id: string,
     @GetUser() currentUser: { id: string; email: string },

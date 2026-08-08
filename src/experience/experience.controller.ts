@@ -17,7 +17,6 @@ import {
   ApiBearerAuth,
   ApiBody,
   ApiOperation,
-  ApiParam,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
@@ -26,6 +25,10 @@ import { RolesGuard } from '../guards/roles.guard';
 import { Roles } from '../decorators/roles.decorator';
 import { Roles as RolesEnum } from '../common/enum/roles.enum';
 import { Experience } from './experience.entity';
+import {
+  ApiCrudErrorResponses,
+  ApiUuidParam,
+} from '../decorators/api-common-response.decorator';
 
 /**
  * Gère le cycle de vie des expériences étudiantes (création, consultation,
@@ -65,12 +68,9 @@ export class ExperienceController {
     description: 'Expérience créée avec succès',
     type: Experience,
   })
-  @ApiResponse({
-    status: 400,
-    description: 'Expérience existante ou données invalides',
+  @ApiCrudErrorResponses({
+    badRequest: 'Expérience existante ou données invalides',
   })
-  @ApiResponse({ status: 401, description: 'Authentification requise' })
-  @ApiResponse({ status: 403, description: 'Rôle insuffisant' })
   create(@Body() dto: CreateExperienceDto): Promise<Experience> {
     return this.experienceService.create(dto);
   }
@@ -95,8 +95,7 @@ export class ExperienceController {
     type: Experience,
     isArray: true,
   })
-  @ApiResponse({ status: 401, description: 'Authentification requise' })
-  @ApiResponse({ status: 403, description: 'Rôle insuffisant' })
+  @ApiCrudErrorResponses()
   findAll(): Promise<Experience[]> {
     return this.experienceService.findAll();
   }
@@ -121,19 +120,14 @@ export class ExperienceController {
     description:
       "Retourne toutes les expériences associées à l'UUID d'un étudiant donné.",
   })
-  @ApiParam({
-    name: 'studentId',
-    description: "UUID de l'étudiant",
-    format: 'uuid',
-  })
+  @ApiUuidParam('studentId', "UUID de l'étudiant")
   @ApiResponse({
     status: 200,
     description: "Expériences de l'étudiant récupérées avec succès",
     type: Experience,
     isArray: true,
   })
-  @ApiResponse({ status: 401, description: 'Authentification requise' })
-  @ApiResponse({ status: 403, description: 'Rôle insuffisant' })
+  @ApiCrudErrorResponses()
   findByEtudiant(
     @Param('studentId', ParseUUIDPipe) studentId: string,
   ): Promise<Experience[]> {
@@ -155,19 +149,13 @@ export class ExperienceController {
     description:
       "Retourne les détails complets d'une expérience à partir de son UUID.",
   })
-  @ApiParam({
-    name: 'id',
-    description: "UUID de l'expérience à récupérer",
-    format: 'uuid',
-  })
+  @ApiUuidParam('id', "UUID de l'expérience à récupérer")
   @ApiResponse({
     status: 200,
     description: 'Expérience trouvée',
     type: Experience,
   })
-  @ApiResponse({ status: 401, description: 'Authentification requise' })
-  @ApiResponse({ status: 403, description: 'Rôle insuffisant' })
-  @ApiResponse({ status: 404, description: 'Expérience introuvable' })
+  @ApiCrudErrorResponses({ notFound: 'Expérience' })
   findOne(@Param('id', ParseUUIDPipe) id: string): Promise<Experience> {
     return this.experienceService.findOne(id);
   }
@@ -189,21 +177,14 @@ export class ExperienceController {
     description:
       "Met à jour partiellement les informations d'une expérience existante.",
   })
-  @ApiParam({
-    name: 'id',
-    description: "UUID de l'expérience à modifier",
-    format: 'uuid',
-  })
+  @ApiUuidParam('id', "UUID de l'expérience à modifier")
   @ApiBody({ type: UpdateExperienceDto })
   @ApiResponse({
     status: 200,
     description: 'Expérience mise à jour avec succès',
     type: Experience,
   })
-  @ApiResponse({ status: 400, description: 'Données invalides' })
-  @ApiResponse({ status: 401, description: 'Authentification requise' })
-  @ApiResponse({ status: 403, description: 'Rôle insuffisant' })
-  @ApiResponse({ status: 404, description: 'Expérience introuvable' })
+  @ApiCrudErrorResponses({ badRequest: true, notFound: 'Expérience' })
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateExperienceDto,
@@ -227,18 +208,12 @@ export class ExperienceController {
       'Supprime logiquement une expérience (statut + date de suppression). ' +
       'Réservé aux rôles ADMIN, MANAGER et SUPERADMIN.',
   })
-  @ApiParam({
-    name: 'id',
-    description: "UUID de l'expérience à supprimer",
-    format: 'uuid',
-  })
+  @ApiUuidParam('id', "UUID de l'expérience à supprimer")
   @ApiResponse({
     status: 204,
     description: 'Expérience supprimée avec succès',
   })
-  @ApiResponse({ status: 401, description: 'Authentification requise' })
-  @ApiResponse({ status: 403, description: 'Rôle insuffisant' })
-  @ApiResponse({ status: 404, description: 'Expérience introuvable' })
+  @ApiCrudErrorResponses({ notFound: 'Expérience' })
   remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
     return this.experienceService.remove(id);
   }

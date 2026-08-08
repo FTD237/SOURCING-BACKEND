@@ -14,7 +14,6 @@ import {
   ApiBearerAuth,
   ApiBody,
   ApiOperation,
-  ApiParam,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
@@ -30,6 +29,10 @@ import {
 } from './company.dto';
 import { Roles } from '../decorators/roles.decorator';
 import { Company } from './company.entity';
+import {
+  ApiCrudErrorResponses,
+  ApiUuidParam,
+} from '../decorators/api-common-response.decorator';
 
 /**
  * Gère le cycle de vie des entreprises (création, consultation, mise à jour,
@@ -68,13 +71,7 @@ export class CompanyController {
     description: 'Entreprise créée avec succès',
     type: CreateCompanyResponseDto,
   })
-  @ApiResponse({ status: 400, description: 'Données invalides' })
-  @ApiResponse({ status: 401, description: 'Authentification requise' })
-  @ApiResponse({
-    status: 403,
-    description: 'Rôle insuffisant pour créer une entreprise',
-  })
-  @ApiResponse({ status: 409, description: 'Email déjà existant' })
+  @ApiCrudErrorResponses({ badRequest: true, conflict: 'Email déjà existant' })
   create(
     @Body() dto: CreateCompanyDto,
     @GetUser() currentUser: { id: string; email: string },
@@ -107,8 +104,7 @@ export class CompanyController {
     type: Company,
     isArray: true,
   })
-  @ApiResponse({ status: 401, description: 'Authentification requise' })
-  @ApiResponse({ status: 403, description: 'Rôle insuffisant' })
+  @ApiCrudErrorResponses()
   findAll(): Promise<Company[]> {
     return this.companyService.findAll();
   }
@@ -133,19 +129,13 @@ export class CompanyController {
     description:
       "Retourne les détails complets d'une entreprise à partir de son UUID.",
   })
-  @ApiParam({
-    name: 'id',
-    description: "UUID de l'entreprise à récupérer",
-    format: 'uuid',
-  })
+  @ApiUuidParam('id', "UUID de l'entreprise à récupérer")
   @ApiResponse({
     status: 200,
     description: 'Entreprise trouvée',
     type: Company,
   })
-  @ApiResponse({ status: 401, description: 'Authentification requise' })
-  @ApiResponse({ status: 403, description: 'Rôle insuffisant' })
-  @ApiResponse({ status: 404, description: 'Entreprise introuvable' })
+  @ApiCrudErrorResponses({ notFound: 'Entreprise' })
   findOne(@Param('id') id: string): Promise<Company> {
     return this.companyService.findOne(id);
   }
@@ -175,21 +165,14 @@ export class CompanyController {
     description:
       "Met à jour partiellement les informations d'une entreprise existante.",
   })
-  @ApiParam({
-    name: 'id',
-    description: "UUID de l'entreprise à modifier",
-    format: 'uuid',
-  })
+  @ApiUuidParam('id', "UUID de l'entreprise à modifier")
   @ApiBody({ type: UpdateCompanyDto })
   @ApiResponse({
     status: 200,
     description: 'Entreprise mise à jour avec succès',
     type: Company,
   })
-  @ApiResponse({ status: 400, description: 'Données invalides' })
-  @ApiResponse({ status: 401, description: 'Authentification requise' })
-  @ApiResponse({ status: 403, description: 'Rôle insuffisant' })
-  @ApiResponse({ status: 404, description: 'Entreprise introuvable' })
+  @ApiCrudErrorResponses({ badRequest: true, notFound: 'Entreprise' })
   update(
     @Param('id') id: string,
     @Body() dto: UpdateCompanyDto,
@@ -215,19 +198,13 @@ export class CompanyController {
       'Supprime logiquement une entreprise (statut + date de suppression). ' +
       'Réservé aux rôles MANAGER, ADMIN et SUPERADMIN.',
   })
-  @ApiParam({
-    name: 'id',
-    description: "UUID de l'entreprise à supprimer",
-    format: 'uuid',
-  })
+  @ApiUuidParam('id', "UUID de l'entreprise à supprimer")
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiResponse({
     status: 204,
     description: 'Entreprise supprimée avec succès',
   })
-  @ApiResponse({ status: 401, description: 'Authentification requise' })
-  @ApiResponse({ status: 403, description: 'Rôle insuffisant' })
-  @ApiResponse({ status: 404, description: 'Entreprise introuvable' })
+  @ApiCrudErrorResponses({ notFound: 'Entreprise' })
   remove(
     @Param('id') id: string,
     @GetUser() currentUser: { id: string; email: string },
