@@ -4,17 +4,15 @@ import {
   Column,
   OneToOne,
   JoinColumn,
-  CreateDateColumn,
-  UpdateDateColumn,
   Unique,
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { User } from '../user/user.entity';
-import { Statut } from '../common/enum/statut.enum';
+import { AuditableEntity } from '../entity/auditable.entity';
 
 @Entity('etudiant')
 @Unique('UQ_ETUDIANT_MATRICULE', ['matricule'])
-export class Etudiant {
+export class Etudiant extends AuditableEntity {
   @ApiProperty({ example: '1aec5bef-7a21-47d1-b7f5-c2a3e1b57023' })
   @PrimaryGeneratedColumn('uuid')
   id: string;

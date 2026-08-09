@@ -5,8 +5,6 @@ import {
   Column,
   ManyToOne,
   JoinColumn,
-  CreateDateColumn,
-  UpdateDateColumn,
   BeforeUpdate,
   BeforeInsert,
   Unique,
@@ -14,14 +12,15 @@ import {
 } from 'typeorm';
 import { ApiHideProperty, ApiProperty } from '@nestjs/swagger';
 import { Exclude } from 'class-transformer';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Role } from '../entity/role.entity';
 import { Etudiant } from '../etudiant/etudiant.entity';
 import { Company } from '../company/company.entity';
-import { Statut } from '../common/enum/statut.enum';
+import { AuditableEntity } from '../entity/auditable.entity';
 
 @Entity('user')
 @Unique('UQ_USERS_EMAIL', ['email'])
-export class User {
+export class User extends AuditableEntity {
   @ApiProperty({ example: '1aec5bef-7a21-47d1-b7f5-c2a3e1b57023' })
   @PrimaryGeneratedColumn('uuid')
   id: string;
