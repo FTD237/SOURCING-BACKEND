@@ -5,37 +5,42 @@ import {
   Column,
   ManyToOne,
   JoinColumn,
-  CreateDateColumn,
-  UpdateDateColumn,
   BeforeUpdate,
   BeforeInsert,
   Unique,
   OneToOne,
 } from 'typeorm';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Role } from '../entity/role.entity';
 import { Etudiant } from '../etudiant/etudiant.entity';
 import { Company } from '../company/company.entity';
-import { Statut } from '../common/enum/statut.enum';
+import { AuditableEntity } from '../entity/auditable.entity';
 
 @Entity('user')
 @Unique('UQ_USERS_EMAIL', ['email'])
-export class User {
+export class User extends AuditableEntity {
+  @ApiProperty({ example: '1aec5bef-7a21-47d1-b7f5-c2a3e1b57023' })
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  @ApiProperty({ example: '1aec5bef-7a21-47d1-b7f5-c2a3e1b57023' })
   @Column()
   id_role: string;
 
+  @ApiProperty({ type: () => Role })
   @ManyToOne(() => Role)
   @JoinColumn({ name: 'id_role' })
   role: Role;
 
+  @ApiProperty({ example: 'Dupont' })
   @Column()
   nom: string;
 
+  @ApiProperty({ example: 'Jean' })
   @Column()
   prenom: string;
 
+  @ApiProperty({ example: 'jean.dupont@example.com' })
   @Column()
   email: string;
 
@@ -43,9 +48,11 @@ export class User {
   password: string;
 
   // Relation One-to-One avec Etudiant
+  @ApiPropertyOptional({ type: () => Etudiant })
   @OneToOne(() => Etudiant, (etudiant) => etudiant.user)
   etudiant: Etudiant;
 
+  @ApiPropertyOptional({ type: () => Company })
   @OneToOne(() => Company, (company) => company.user)
   company: Company;
 
@@ -56,24 +63,6 @@ export class User {
       this.email = this.email.toLowerCase().trim();
     }
   }
-
-  @CreateDateColumn()
-  dte_creation: Date;
-
-  @UpdateDateColumn()
-  dte_modif: Date;
-
-  @Column({ default: Statut.ACTIF, type: 'enum', enum: Statut })
-  statut: Statut;
-
-  @Column({ nullable: true })
-  dte_suppression: Date;
-
-  @Column({ nullable: true, type: 'varchar' })
-  create_by: string;
-
-  @Column({ nullable: true, type: 'varchar' })
-  updated_by: string;
 
   @Column({ nullable: true, type: 'varchar' })
   resetPasswordToken: string | null;
