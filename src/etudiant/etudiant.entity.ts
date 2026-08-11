@@ -45,28 +45,4 @@ export class Etudiant extends AuditableEntity {
   @ApiProperty({ example: 0, required: false })
   @Column({ nullable: true, type: 'float', default: 0 })
   star_rate: number;
-
-  @ApiProperty()
-  @CreateDateColumn()
-  dte_creation: Date;
-
-  @ApiProperty()
-  @UpdateDateColumn()
-  dte_modif: Date;
-
-  @ApiProperty({ enum: Statut, example: Statut.ACTIF })
-  @Column({ default: Statut.ACTIF, type: 'enum', enum: Statut })
-  statut: Statut;
-
-  @ApiProperty({ required: false })
-  @Column({ nullable: true })
-  dte_suppression: Date;
-
-  @ApiProperty({ required: false })
-  @Column({ nullable: true, type: 'varchar' })
-  create_by: string;
-
-  @ApiProperty({ required: false })
-  @Column({ nullable: true, type: 'varchar' })
-  updated_by: string;
 }

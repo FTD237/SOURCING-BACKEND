@@ -12,7 +12,6 @@ import {
 } from 'typeorm';
 import { ApiHideProperty, ApiProperty } from '@nestjs/swagger';
 import { Exclude } from 'class-transformer';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Role } from '../entity/role.entity';
 import { Etudiant } from '../etudiant/etudiant.entity';
 import { Company } from '../company/company.entity';
@@ -68,31 +67,6 @@ export class User extends AuditableEntity {
       this.email = this.email.toLowerCase().trim();
     }
   }
-
-  @ApiProperty()
-  @CreateDateColumn()
-  dte_creation: Date;
-
-  @ApiProperty()
-  @UpdateDateColumn()
-  dte_modif: Date;
-
-  @ApiProperty({ enum: Statut, example: Statut.ACTIF })
-  @Column({ default: Statut.ACTIF, type: 'enum', enum: Statut })
-  statut: Statut;
-
-  @ApiProperty({ required: false })
-  @Column({ nullable: true })
-  dte_suppression: Date;
-
-  @ApiProperty({ required: false })
-  @Column({ nullable: true, type: 'varchar' })
-  create_by: string;
-
-  @ApiProperty({ required: false })
-  @Column({ nullable: true, type: 'varchar' })
-  updated_by: string;
-
   // Jamais exposés : tokens de réinitialisation de mot de passe.
   @ApiHideProperty()
   @Exclude()
