@@ -10,7 +10,8 @@ import {
   Unique,
   OneToOne,
 } from 'typeorm';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiHideProperty, ApiProperty } from '@nestjs/swagger';
+import { Exclude } from 'class-transformer';
 import { Role } from '../entity/role.entity';
 import { Etudiant } from '../etudiant/etudiant.entity';
 import { Company } from '../company/company.entity';
@@ -32,27 +33,30 @@ export class User extends AuditableEntity {
   @JoinColumn({ name: 'id_role' })
   role: Role;
 
-  @ApiProperty({ example: 'Dupont' })
+  @ApiProperty({ example: 'Fils' })
   @Column()
   nom: string;
 
-  @ApiProperty({ example: 'Jean' })
+  @ApiProperty({ example: 'Logan' })
   @Column()
   prenom: string;
 
-  @ApiProperty({ example: 'jean.dupont@example.com' })
+  @ApiProperty({ example: 'logan@example.com' })
   @Column()
   email: string;
 
+  // Jamais exposé : ni dans la doc Swagger (@ApiHideProperty), ni dans le
+  // JSON réel si ClassSerializerInterceptor est actif (@Exclude).
+  @ApiHideProperty()
+  @Exclude()
   @Column()
   password: string;
 
-  // Relation One-to-One avec Etudiant
-  @ApiPropertyOptional({ type: () => Etudiant })
+  @ApiProperty({ type: () => Etudiant, required: false })
   @OneToOne(() => Etudiant, (etudiant) => etudiant.user)
   etudiant: Etudiant;
 
-  @ApiPropertyOptional({ type: () => Company })
+  @ApiProperty({ type: () => Company, required: false })
   @OneToOne(() => Company, (company) => company.user)
   company: Company;
 
@@ -63,10 +67,14 @@ export class User extends AuditableEntity {
       this.email = this.email.toLowerCase().trim();
     }
   }
-
+  // Jamais exposés : tokens de réinitialisation de mot de passe.
+  @ApiHideProperty()
+  @Exclude()
   @Column({ nullable: true, type: 'varchar' })
   resetPasswordToken: string | null;
 
+  @ApiHideProperty()
+  @Exclude()
   @Column({ nullable: true, type: 'timestamp' })
   resetPasswordExpires: Date | null;
 }
