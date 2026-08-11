@@ -20,12 +20,6 @@ export class CreateCompanyDto {
   @IsNotEmpty()
   prenom: string;
 
-  // Information Company
-  @ApiProperty()
-  @IsNotEmpty()
-  @IsString()
-  user_id: string;
-
   @ApiProperty()
   @IsString()
   @IsNotEmpty()
@@ -55,7 +49,4 @@ export class CreateCompanyResponseDto {
 
   @ApiProperty()
   company: Company;
-
-  @ApiProperty()
-  generatedPassword: string;
 }

@@ -252,7 +252,7 @@ Then('I receive a {string} error', function (errorType: string) {
       `Expected ${ExpectedClass.name} but got ${error.constructor.name}`,
     );
   } else {
-    assert.match(error.message, new RegExp(errorType, 'i'));
+    assert.ok(error.message.toLowerCase().includes(errorType.toLowerCase()));
   }
 });
 

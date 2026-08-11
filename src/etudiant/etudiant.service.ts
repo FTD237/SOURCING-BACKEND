@@ -15,6 +15,7 @@ import { generatePassword } from '../common/utils/generate-password';
 import { Statut } from '../common/enum/statut.enum';
 import { ActivationTokenService } from '../common/services/activation-token.service';
 import { MailService } from '../mail/mail.service';
+import { Roles } from '../common/enum/roles.enum';
 
 @Injectable()
 export class EtudiantService {
@@ -46,7 +47,7 @@ export class EtudiantService {
       );
 
     const roleEtudiant = await this.roleRepo.findOne({
-      where: { nom: 'etudiant' },
+      where: { nom: Roles.ETUDIANT },
     });
 
     if (!roleEtudiant)
