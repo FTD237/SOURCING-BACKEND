@@ -5,10 +5,12 @@ import {
   OneToOne,
   JoinColumn,
   Unique,
+  OneToMany,
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { User } from '../user/user.entity';
 import { AuditableEntity } from '../entity/auditable.entity';
+import { Postuler } from '../postuler/postuler.entity';
 
 @Entity('etudiant')
 @Unique('UQ_ETUDIANT_MATRICULE', ['matricule'])
@@ -45,4 +47,8 @@ export class Etudiant extends AuditableEntity {
   @ApiProperty({ example: 0, required: false })
   @Column({ nullable: true, type: 'float', default: 0 })
   star_rate: number;
+
+  @ApiProperty({ type: () => [Postuler] })
+  @OneToMany(() => Postuler, (postuler) => postuler.etudiant)
+  candidatures: Postuler[];
 }
