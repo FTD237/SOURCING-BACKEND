@@ -56,7 +56,7 @@ describe('PostulerController', () => {
 
     const result = await controller.create(dto, currentUser);
 
-    expect(service.create).toHaveBeenCalledWith(dto);
+    expect(service.create).toHaveBeenCalledWith(dto, currentUser);
     expect(result).toEqual(mockPostuler);
   });
 
