@@ -77,7 +77,9 @@ describe('OffreService', () => {
 
       const result = await service.findOne('exemple-uuid');
 
-      expect(repository.findOne).toHaveBeenCalledWith({ where: { id: 1 } });
+      expect(repository.findOne).toHaveBeenCalledWith({
+        where: { id: 'exemple-uuid' },
+      });
       expect(result).toEqual(mockOffre);
     });
 
@@ -92,7 +94,9 @@ describe('OffreService', () => {
       await expect(service.findOne('exemple-uuid')).rejects.toThrow(
         'not found',
       );
-      expect(notFoundSpy).toHaveBeenCalledWith('Offre #999 introuvable.');
+      expect(notFoundSpy).toHaveBeenCalledWith(
+        'Offre #exemple-uuid introuvable.',
+      );
     });
   });
 

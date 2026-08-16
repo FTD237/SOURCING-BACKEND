@@ -66,7 +66,7 @@ describe('OffreController', () => {
 
     const result = await controller.findOne('exemple-uuid');
 
-    expect(service.findOne).toHaveBeenCalledWith(1);
+    expect(service.findOne).toHaveBeenCalledWith('exemple-uuid');
     expect(result).toEqual(mockOffre);
   });
 
@@ -80,7 +80,11 @@ describe('OffreController', () => {
 
     const result = await controller.update('exemple-uuid', dto, currentUser);
 
-    expect(service.update).toHaveBeenCalledWith(1, dto, currentUser);
+    expect(service.update).toHaveBeenCalledWith(
+      'exemple-uuid',
+      dto,
+      currentUser,
+    );
     expect(result.descriptions).toBe('Nouvelle description');
   });
 
@@ -89,6 +93,6 @@ describe('OffreController', () => {
 
     await controller.remove('exemple-uuid', currentUser);
 
-    expect(service.remove).toHaveBeenCalledWith(1, currentUser);
+    expect(service.remove).toHaveBeenCalledWith('exemple-uuid', currentUser);
   });
 });
