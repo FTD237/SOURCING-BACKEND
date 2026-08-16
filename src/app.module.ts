@@ -14,6 +14,7 @@ import { AuthModule } from './auth/auth.module';
 import { CompanyModule } from './company/company.module';
 import { MailModule } from './mail/mail.module';
 import { FileModule } from './file/file.module';
+import { PostulerModule } from './postuler/postuler.module';
 
 @Module({
   imports: [
@@ -79,6 +80,7 @@ import { FileModule } from './file/file.module';
     CompanyModule,
     MailModule,
     FileModule,
+    PostulerModule,
   ],
 })
 export class AppModule {}

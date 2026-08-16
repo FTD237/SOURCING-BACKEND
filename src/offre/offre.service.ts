@@ -1,8 +1,11 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+// src/offre/offre.service.ts
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Offre } from './offre.entity';
 import { CreateOffreDto, UpdateOffreDto } from './offre.dto';
+import { Statut } from '../common/enum/statut.enum';
+import { ExceptionFactory } from '../common/exceptions/exception-factory';
 
 @Injectable()
 export class OffreService {
@@ -11,8 +14,12 @@ export class OffreService {
     private readonly offreRepo: Repository<Offre>,
   ) {}
 
-  async create(dto: CreateOffreDto): Promise<Offre> {
+  async create(
+    dto: CreateOffreDto,
+    currentUser: { id: string; email: string },
+  ): Promise<Offre> {
     const offre = this.offreRepo.create(dto);
+    offre.create_by = currentUser.id;
     return this.offreRepo.save(offre);
   }
 
@@ -20,22 +27,37 @@ export class OffreService {
     return this.offreRepo.find();
   }
 
-  async findOne(id: number): Promise<Offre> {
+  async findOne(id: string): Promise<Offre> {
     const offre = await this.offreRepo.findOne({ where: { id } });
-    if (!offre) throw new NotFoundException(`Offre #${id} introuvable`);
+    if (!offre) {
+      ExceptionFactory.notFound(`Offre #${id} introuvable.`);
+    }
     return offre;
   }
 
-  async update(id: number, dto: UpdateOffreDto): Promise<Offre> {
+  async update(
+    id: string,
+    dto: UpdateOffreDto,
+    currentUser: { id: string; email: string },
+  ): Promise<Offre> {
     const offre = await this.findOne(id);
+    offre.updated_by = currentUser.id;
     Object.assign(offre, dto);
     return this.offreRepo.save(offre);
   }
 
-  async remove(id: number): Promise<void> {
+  async remove(
+    id: string,
+    currentUser: { id: string; email: string },
+  ): Promise<void> {
     const offre = await this.findOne(id);
-    offre.statut = 'supprime';
+    offre.statut = Statut.SUPPRIME;
     offre.dte_suppression = new Date();
-    await this.offreRepo.save(offre);
+    offre.updated_by = currentUser.id;
+    try {
+      await this.offreRepo.save(offre);
+    } catch (error) {
+      ExceptionFactory.database(error, 'Offre');
+    }
   }
 }

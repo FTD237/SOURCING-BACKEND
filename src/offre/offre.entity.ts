@@ -1,27 +1,16 @@
 // ─── offre.entity.ts ─────────────────────────────────────────────────────────
-import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Column,
-  CreateDateColumn,
-  UpdateDateColumn,
-} from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
+import { Postuler } from '../postuler/postuler.entity';
+import { AuditableEntity } from '../entity/auditable.entity';
 
 @Entity('offre')
-export class Offre {
-  @PrimaryGeneratedColumn()
-  id: number;
-
-  @Column({ unique: true })
-  uniqueId: string;
+export class Offre extends AuditableEntity {
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
   @Column({ nullable: true, type: 'text' })
   descriptions: string;
 
-  @CreateDateColumn() dte_creation: Date;
-  @UpdateDateColumn() dte_modif: Date;
-  @Column({ nullable: true }) statut: string;
-  @Column({ nullable: true }) dte_suppression: Date;
-  @Column({ nullable: true }) create_by: number;
-  @Column({ nullable: true }) updated_by: number;
+  @OneToMany(() => Postuler, (postuler) => postuler.offre)
+  candidatures: Offre[];
 }
