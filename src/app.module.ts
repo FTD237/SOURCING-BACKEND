@@ -15,6 +15,7 @@ import { CompanyModule } from './company/company.module';
 import { MailModule } from './mail/mail.module';
 import { FileModule } from './file/file.module';
 import { PostulerModule } from './postuler/postuler.module';
+import { EtudiantSkillModule } from './etudiant-skill/etudiant-skill.module';
 
 @Module({
   imports: [
@@ -81,6 +82,7 @@ import { PostulerModule } from './postuler/postuler.module';
     MailModule,
     FileModule,
     PostulerModule,
+    EtudiantSkillModule,
   ],
 })
 export class AppModule {}
