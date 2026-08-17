@@ -20,6 +20,7 @@ export class OffreService {
   ): Promise<Offre> {
     const offre = this.offreRepo.create(dto);
     offre.create_by = currentUser.id;
+    offre.dte_creation = new Date();
     return this.offreRepo.save(offre);
   }
 
@@ -42,6 +43,7 @@ export class OffreService {
   ): Promise<Offre> {
     const offre = await this.findOne(id);
     offre.updated_by = currentUser.id;
+    offre.dte_modif = new Date();
     Object.assign(offre, dto);
     return this.offreRepo.save(offre);
   }
