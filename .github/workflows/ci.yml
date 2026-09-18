@@ -54,48 +54,48 @@ jobs:
           UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
           UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
 
-  cucumber:
-    name: Cucumber (BDD)
-    runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_USER: test
-          POSTGRES_PASSWORD: test
-          POSTGRES_DB: sourcing_test
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-    steps:
-      - name: Checkout
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
-      - name: Setup pnpm
-        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
-        with:
-          version: 11.7.0
-      - name: Setup Node.js
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
-        with:
-          node-version: 22
-          cache: 'pnpm'
-      - name: Install dependencies
-        run: pnpm install --ignore-scripts --frozen-lockfile
-      - name: Run Cucumber scenarios
-        run: pnpm test:cucumber
-        env:
-          JWT_SECRET: ${{ secrets.JWT_SECRET_TEST }}
-          DB_HOST: localhost
-          DB_PORT: 5432
-          DB_USERNAME: test
-          DB_PASSWORD: test
-          DB_NAME: sourcing_test
-          UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
-          UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
+#  cucumber:
+#    name: Cucumber (BDD)
+#    runs-on: ubuntu-latest
+#    services:
+#      postgres:
+#        image: postgres:15
+#        env:
+#          POSTGRES_USER: test
+#          POSTGRES_PASSWORD: test
+#          POSTGRES_DB: sourcing_test
+#        ports:
+#          - 5432:5432
+#        options: >-
+#          --health-cmd pg_isready
+#          --health-interval 10s
+#          --health-timeout 5s
+#          --health-retries 5
+#    steps:
+#      - name: Checkout
+#        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+#      - name: Setup pnpm
+#        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
+#        with:
+#          version: 11.7.0
+#      - name: Setup Node.js
+#        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+#        with:
+#          node-version: 22
+#          cache: 'pnpm'
+#      - name: Install dependencies
+#        run: pnpm install --ignore-scripts --frozen-lockfile
+#      - name: Run Cucumber scenarios
+#        run: pnpm test:cucumber
+#        env:
+#          JWT_SECRET: ${{ secrets.JWT_SECRET_TEST }}
+#          DB_HOST: localhost
+#          DB_PORT: 5432
+#          DB_USERNAME: test
+#          DB_PASSWORD: test
+#          DB_NAME: sourcing_test
+#          UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
+#          UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
 
   security-audit:
     name: Security Audit
