@@ -4,10 +4,12 @@ import {
   Column,
   Unique,
   OneToMany,
+  ManyToMany,
 } from 'typeorm';
 import { AuditableEntity } from '../entity/auditable.entity';
 import { ApiProperty } from '@nestjs/swagger';
 import { EtudiantSkill } from '../etudiant-skill/etudiant-skill.entity';
+import { Offre } from '../offre/offre.entity';
 
 @Entity('skills')
 @Unique('UQ_SKILL_NAME', ['nom'])
@@ -23,4 +25,8 @@ export class Skill extends AuditableEntity {
   @ApiProperty({ type: () => [EtudiantSkill] })
   @OneToMany(() => EtudiantSkill, (etudiantSkill) => etudiantSkill.skill)
   etudiantSkills: EtudiantSkill[];
+
+  @ApiProperty({ type: () => [Offre] })
+  @ManyToMany(() => Offre, (offre) => offre.skills)
+  offres: Offre[];
 }
