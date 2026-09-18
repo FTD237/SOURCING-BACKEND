@@ -13,6 +13,7 @@ import { Skill } from '../skills/skill.entity';
 describe('OffreService', () => {
   let service: OffreService;
   let repository: jest.Mocked<Repository<Offre>>;
+  let skillRepository: jest.Mocked<Repository<Skill>>;
 
   const currentUser = { id: 'user-1', email: 'user@test.com' };
 
@@ -45,6 +46,7 @@ describe('OffreService', () => {
 
     service = module.get<OffreService>(OffreService);
     repository = module.get(getRepositoryToken(Offre));
+    skillRepository = module.get(getRepositoryToken(Skill));
   });
 
   afterEach(() => jest.clearAllMocks());
@@ -56,12 +58,22 @@ describe('OffreService', () => {
         companyId: 'company-uuid-1',
         skillIds: ['skill-uuid-1', 'skill-uuid-2', 'skill-uuid-3'],
       };
+      const mockSkills = [
+        { id: 'skill-uuid-1' },
+        { id: 'skill-uuid-2' },
+        { id: 'skill-uuid-3' },
+      ] as Skill[];
+
+      skillRepository.findBy.mockResolvedValue(mockSkills); // ← ajouté
       repository.create.mockReturnValue(mockOffre);
       repository.save.mockResolvedValue(mockOffre);
 
       const result = await service.create(dto, currentUser);
 
-      expect(repository.create).toHaveBeenCalledWith(dto);
+      expect(repository.create).toHaveBeenCalledWith({
+        ...dto,
+        skills: mockSkills, // ← corrigé pour matcher l'appel réel
+      });
       expect(repository.save).toHaveBeenCalledWith(
         expect.objectContaining({ create_by: currentUser.id }),
       );
