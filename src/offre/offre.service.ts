@@ -1,24 +1,34 @@
 // src/offre/offre.service.ts
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { Offre } from './offre.entity';
 import { CreateOffreDto, UpdateOffreDto } from './offre.dto';
 import { Statut } from '../common/enum/statut.enum';
 import { ExceptionFactory } from '../common/exceptions/exception-factory';
+import { Skill } from '../skills/skill.entity';
 
 @Injectable()
 export class OffreService {
   constructor(
     @InjectRepository(Offre)
     private readonly offreRepo: Repository<Offre>,
+    @InjectRepository(Skill)
+    private readonly skillRepo: Repository<Skill>,
   ) {}
 
   async create(
     dto: CreateOffreDto,
     currentUser: { id: string; email: string },
   ): Promise<Offre> {
-    const offre = this.offreRepo.create(dto);
+    const skills = await this.skillRepo.findBy({ id: In(dto.skillIds) });
+    if (skills.length !== dto.skillIds.length) {
+      ExceptionFactory.notFound('Un ou plusieurs skills sont introuvables');
+    }
+    const offre = this.offreRepo.create({
+      ...dto,
+      skills,
+    });
     offre.create_by = currentUser.id;
     offre.dte_creation = new Date();
     return this.offreRepo.save(offre);

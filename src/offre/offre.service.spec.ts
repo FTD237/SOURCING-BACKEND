@@ -8,6 +8,7 @@ import { Offre } from './offre.entity';
 import { CreateOffreDto, UpdateOffreDto } from './offre.dto';
 import { ExceptionFactory } from '../common/exceptions/exception-factory';
 import { Statut } from '../common/enum/statut.enum';
+import { Skill } from '../skills/skill.entity';
 
 describe('OffreService', () => {
   let service: OffreService;
@@ -33,6 +34,12 @@ describe('OffreService', () => {
             save: jest.fn(),
           },
         },
+        {
+          provide: getRepositoryToken(Skill),
+          useValue: {
+            findBy: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
@@ -46,6 +53,8 @@ describe('OffreService', () => {
     it('crée une offre et enregistre le créateur', async () => {
       const dto: CreateOffreDto = {
         descriptions: 'Stage Full Stack',
+        companyId: 'company-uuid-1',
+        skillIds: ['skill-uuid-1', 'skill-uuid-2', 'skill-uuid-3'],
       };
       repository.create.mockReturnValue(mockOffre);
       repository.save.mockResolvedValue(mockOffre);
