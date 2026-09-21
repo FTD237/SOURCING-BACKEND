@@ -6,6 +6,8 @@ import { BadRequestException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { AuthService } from './auth.service';
 import { User } from '../user/user.entity';
+import { Etudiant } from '../etudiant/etudiant.entity';
+import { Company } from '../company/company.entity';
 import { MailService } from '../mail/mail.service';
 
 describe('AuthService', () => {
@@ -17,6 +19,18 @@ describe('AuthService', () => {
   const repoMock = {
     findOne: mockFindOne,
     save: mockSave,
+  };
+
+  // ✅ Mock pour EtudiantRepository
+  const etudiantRepoMock = {
+    findOne: jest.fn().mockResolvedValue(null),
+    save: jest.fn(),
+  };
+
+  // ✅ Mock pour CompanyRepository
+  const companyRepoMock = {
+    findOne: jest.fn().mockResolvedValue(null),
+    save: jest.fn(),
   };
 
   const jwtServiceMock = { sign: jest.fn().mockReturnValue('signed-jwt') };
@@ -45,6 +59,8 @@ describe('AuthService', () => {
       providers: [
         AuthService,
         { provide: getRepositoryToken(User), useValue: repoMock },
+        { provide: getRepositoryToken(Etudiant), useValue: etudiantRepoMock }, // ✅ Ajouté
+        { provide: getRepositoryToken(Company), useValue: companyRepoMock }, // ✅ Ajouté
         { provide: JwtService, useValue: jwtServiceMock },
         { provide: ConfigService, useValue: configServiceMock },
         { provide: MailService, useValue: mailServiceMock },
