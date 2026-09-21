@@ -26,13 +26,13 @@ import {
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { GetUser } from '../auth/get-user.decorator';
 import { RolesGuard } from '../guards/roles.guard';
-import { Roles } from '../decorators/roles.decorator';
 import { Roles as RolesEnum } from '../common/enum/roles.enum';
 import { Etudiant } from './etudiant.entity';
 import {
   ApiCrudErrorResponses,
   ApiUuidParam,
 } from '../decorators/api-common-response.decorator';
+import { Roles } from '../decorators/roles.decorator';
 
 /**
  * Gère le cycle de vie des étudiants (création, consultation, mise à jour,
@@ -113,7 +113,13 @@ export class EtudiantController {
    * @throws NotFoundException si aucun étudiant ne correspond à `id` (404).
    */
   @Get(':id')
-  @Roles(RolesEnum.RH, RolesEnum.MANAGER, RolesEnum.ADMIN, RolesEnum.SUPERADMIN)
+  @Roles(
+    RolesEnum.RH,
+    RolesEnum.MANAGER,
+    RolesEnum.ADMIN,
+    RolesEnum.SUPERADMIN,
+    RolesEnum.ETUDIANT,
+  )
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: 'Récupérer un étudiant par son id',

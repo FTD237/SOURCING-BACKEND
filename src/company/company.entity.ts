@@ -5,11 +5,13 @@ import {
   OneToOne,
   JoinColumn,
   ManyToOne,
+  OneToMany,
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { User } from '../user/user.entity';
 import { Country } from '../entity/country.entity';
 import { AuditableEntity } from '../entity/auditable.entity';
+import { Offre } from '../offre/offre.entity';
 
 @Entity('company')
 export class Company extends AuditableEntity {
@@ -34,4 +36,8 @@ export class Company extends AuditableEntity {
   @ManyToOne(() => Country)
   @JoinColumn({ name: 'country_code' })
   country: Country;
+
+  @ApiProperty({ type: () => [Offre] })
+  @OneToMany(() => Offre, (offre) => offre.company)
+  offres: Offre[];
 }

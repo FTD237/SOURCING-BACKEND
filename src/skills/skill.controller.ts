@@ -20,17 +20,16 @@ import {
 import { SkillService } from './skill.service';
 import { CreateSkillDto, UpdateSkillDto } from './skill.dto';
 import { Skill } from './skill.entity';
-import { RolesGuard } from '../guards/roles.guard';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { Roles as RolesEnum } from '../common/enum/roles.enum';
 import { Roles } from '../decorators/roles.decorator';
 import { GetUser } from '../auth/get-user.decorator';
+import { RolesGuard } from '../guards/roles.guard';
 
 @ApiTags('skills')
 @ApiBearerAuth()
 @Controller('skills')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(RolesEnum.ETUDIANT, RolesEnum.MANAGER, RolesEnum.RH)
 export class SkillController {
   constructor(private readonly skillService: SkillService) {}
 
@@ -42,6 +41,8 @@ export class SkillController {
     status: HttpStatus.CONFLICT,
     description: 'Skill déjà existant',
   })
+  @ApiBearerAuth('JWT-auth')
+  @Roles(RolesEnum.ETUDIANT, RolesEnum.MANAGER, RolesEnum.RH)
   create(
     @Body() dto: CreateSkillDto,
     @GetUser() currentUser: { id: string; email: string },
@@ -52,6 +53,8 @@ export class SkillController {
   @Get()
   @ApiOperation({ summary: 'Lister tous les skills' })
   @ApiResponse({ status: HttpStatus.OK, type: [Skill] })
+  @ApiBearerAuth('JWT-auth')
+  @Roles(RolesEnum.ETUDIANT, RolesEnum.MANAGER, RolesEnum.RH)
   findAll() {
     return this.skillService.findAll();
   }
@@ -64,6 +67,7 @@ export class SkillController {
     status: HttpStatus.NOT_FOUND,
     description: 'Skill introuvable',
   })
+  @ApiBearerAuth('JWT-auth')
   findOne(@Param('id') id: string) {
     return this.skillService.findOne(id);
   }
@@ -76,6 +80,7 @@ export class SkillController {
     status: HttpStatus.NOT_FOUND,
     description: 'Skill introuvable',
   })
+  @ApiBearerAuth('JWT-auth')
   update(
     @Param('id') id: string,
     @Body() dto: UpdateSkillDto,
@@ -93,6 +98,7 @@ export class SkillController {
     status: HttpStatus.NOT_FOUND,
     description: 'Skill introuvable',
   })
+  @ApiBearerAuth('JWT-auth')
   remove(
     @Param('id') id: string,
     @GetUser() currentUser: { id: string; email: string },
