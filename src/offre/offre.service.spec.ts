@@ -64,7 +64,7 @@ describe('OffreService', () => {
         { id: 'skill-uuid-3' },
       ] as Skill[];
 
-      skillRepository.findBy.mockResolvedValue(mockSkills); // ← ajouté
+      skillRepository.findBy.mockResolvedValue(mockSkills);
       repository.create.mockReturnValue(mockOffre);
       repository.save.mockResolvedValue(mockOffre);
 
@@ -72,12 +72,40 @@ describe('OffreService', () => {
 
       expect(repository.create).toHaveBeenCalledWith({
         ...dto,
-        skills: mockSkills, // ← corrigé pour matcher l'appel réel
+        skills: mockSkills,
       });
       expect(repository.save).toHaveBeenCalledWith(
         expect.objectContaining({ create_by: currentUser.id }),
       );
       expect(result).toEqual(mockOffre);
+    });
+
+    it('lève une 404 si un ou plusieurs skills sont introuvables', async () => {
+      const dto: CreateOffreDto = {
+        descriptions: 'Stage Full Stack',
+        companyId: 'company-uuid-1',
+        skillIds: ['skill-uuid-1', 'skill-uuid-2', 'skill-uuid-3'],
+      };
+      // On ne renvoie que 2 skills sur les 3 demandés → mismatch
+      const partialSkills = [
+        { id: 'skill-uuid-1' },
+        { id: 'skill-uuid-2' },
+      ] as Skill[];
+
+      skillRepository.findBy.mockResolvedValue(partialSkills);
+      const notFoundSpy = jest
+        .spyOn(ExceptionFactory, 'notFound')
+        .mockImplementation(() => {
+          throw new Error('skills introuvables');
+        });
+
+      await expect(service.create(dto, currentUser)).rejects.toThrow(
+        'skills introuvables',
+      );
+      expect(notFoundSpy).toHaveBeenCalledWith(
+        'Un ou plusieurs skills sont introuvables',
+      );
+      expect(repository.create).not.toHaveBeenCalled();
     });
   });
 
