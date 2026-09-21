@@ -8,6 +8,9 @@ import * as crypto from 'node:crypto';
 import { User } from '../user/user.entity';
 import { ExceptionFactory } from '../common/exceptions/exception-factory';
 import { MailService } from '../mail/mail.service';
+import { Etudiant } from '../etudiant/etudiant.entity';
+import { Company } from '../company/company.entity';
+import { Roles as RolesEnum } from '../common/enum/roles.enum';
 
 const RESET_TOKEN_TTL_MS = 60 * 60 * 1000; // 1h
 
@@ -16,6 +19,11 @@ export class AuthService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    @InjectRepository(Etudiant)
+    private readonly etudiantRepository: Repository<Etudiant>,
+    @InjectRepository(Company)
+    private readonly companyRepository: Repository<Company>,
+    // Une fois manager effectuer l'ajouter au niveau des logins pour l'id en fonction du role
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     private readonly mailService: MailService,
@@ -36,10 +44,39 @@ export class AuthService {
       role: user.role.nom,
     });
 
+    const roleSpecificId = await this.getRoleSpecificId(user.id, user.role.nom);
+
     return {
       access_token,
-      user: { id: user.id, nom: user.nom, email: user.email },
+      user: {
+        id: user.id,
+        nom: user.nom,
+        email: user.email,
+        ...roleSpecificId,
+      },
     };
+  }
+
+  private async getRoleSpecificId(
+    userId: string,
+    role: RolesEnum,
+  ): Promise<Record<string, string>> {
+    switch (role) {
+      case RolesEnum.ETUDIANT: {
+        const etudiant = await this.etudiantRepository.findOne({
+          where: { userId },
+        });
+        return etudiant ? { id_etudiant: etudiant.id } : {};
+      }
+      case RolesEnum.RH: {
+        const company = await this.companyRepository.findOne({
+          where: { user_id: userId },
+        });
+        return company ? { id_company: company.id } : {};
+      }
+      default:
+        return {};
+    }
   }
 
   async forgotPassword(email: string): Promise<void> {
