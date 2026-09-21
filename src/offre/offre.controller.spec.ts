@@ -43,6 +43,8 @@ describe('OffreController', () => {
   it('create() délègue au service', async () => {
     const dto: CreateOffreDto = {
       descriptions: 'Stage Full Stack',
+      companyId: 'company-uuid-1',
+      skillIds: ['skill-uuid-1', 'skill-uuid-2'],
     };
     service.create.mockResolvedValue(mockOffre);
 

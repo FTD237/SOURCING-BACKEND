@@ -28,7 +28,7 @@ describe('CompanyService', () => {
   let companyRepository: MockCompanyRepository;
   let accountCreationService: MockAccountCreationService;
 
-  const mockCurrentUser = { id: 'user-1', name: 'Admin User' };
+  const mockCurrentUser = { id: 'user-1', email: 'Admin User' };
 
   const mockCreateDto: CreateCompanyDto = {
     nom: 'Tech Corp',
