@@ -8,6 +8,7 @@ import {
   Max,
   Min,
 } from 'class-validator';
+import { ApiPropertyOptional } from '@nestjs/swagger';
 
 /**
  * Borne haute de la taille de page.
@@ -22,12 +23,23 @@ export const LIMITE_PAR_DEFAUT = 20;
 export type Ordre = 'ASC' | 'DESC';
 
 export class PaginationDto {
+  @ApiPropertyOptional({
+    description: 'Numéro de page demandée (commence à 1)',
+    default: 1,
+    minimum: 1,
+  })
   @Type(() => Number)
   @IsInt()
   @Min(1)
   @IsOptional()
   page: number = 1;
 
+  @ApiPropertyOptional({
+    description: "Nombre d'éléments par page",
+    default: LIMITE_PAR_DEFAUT,
+    minimum: 1,
+    maximum: LIMITE_MAXIMALE,
+  })
   @Type(() => Number)
   @IsInt()
   @Min(1)
@@ -43,6 +55,11 @@ export class PaginationDto {
    * la confronter à sa propre liste blanche via {@link triAutorise} — le
    * filtre syntaxique n'est qu'une première barrière.
    */
+  @ApiPropertyOptional({
+    description:
+      'Colonne utilisée pour le tri. Doit commencer par une lettre et ne contenir que des lettres, chiffres, `_` ou `.` (64 caractères max). Confrontée ensuite à une liste blanche par colonne via triAutorise().',
+    example: 'dte_creation',
+  })
   @IsString()
   @Matches(/^[a-zA-Z][a-zA-Z0-9_.]{0,63}$/, {
     message: 'Le champ de tri est invalide.',
@@ -50,6 +67,11 @@ export class PaginationDto {
   @IsOptional()
   tri?: string;
 
+  @ApiPropertyOptional({
+    description: 'Ordre de tri',
+    enum: ['ASC', 'DESC'],
+    default: 'DESC',
+  })
   @Transform(({ value }) => String(value).toUpperCase())
   @IsIn(['ASC', 'DESC'])
   @IsOptional()
