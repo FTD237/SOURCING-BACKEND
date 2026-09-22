@@ -4,9 +4,10 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Postuler } from './postuler.entity';
 import { PostulerService } from './postuler.service';
 import { PostulerController } from './postuler.controller';
+import { NotificationModule } from '../notifications/notification.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Postuler])],
+  imports: [TypeOrmModule.forFeature([Postuler]), NotificationModule],
   controllers: [PostulerController],
   providers: [PostulerService],
   exports: [PostulerService],

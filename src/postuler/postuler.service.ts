@@ -6,12 +6,16 @@ import { CreatePostulerDto } from './dto/create-postuler.dto';
 import { ExceptionFactory } from '../common/exceptions/exception-factory';
 import { UpdatePostulerStatutDto } from './dto/update-postuler-statut.dto';
 import { Statut } from '../common/enum/statut.enum';
+import { NotificationService } from '../notifications/notification.service';
+import { NotificationType } from '../common/enum/notification-type.enum';
+import { StatutCandidature } from '../common/enum/statut-candidature.enum';
 
 @Injectable()
 export class PostulerService {
   constructor(
     @InjectRepository(Postuler)
     private readonly postulerRepository: Repository<Postuler>,
+    private readonly notificationService: NotificationService,
   ) {}
 
   /**
@@ -32,7 +36,24 @@ export class PostulerService {
 
     const postuler = this.postulerRepository.create(dto);
     postuler.create_by = currentUser.id;
-    return this.postulerRepository.save(postuler);
+    const saved = await this.postulerRepository.save(postuler);
+
+    const withRelations = await this.postulerRepository.findOne({
+      where: { id: saved.id },
+      relations: { offre: { company: true }, etudiant: true },
+    });
+
+    if (withRelations?.offre?.company) {
+      await this.notificationService.create({
+        userId: withRelations.offre.company.user_id,
+        type: NotificationType.CANDIDATURE_RECUE,
+        titre: 'Nouvelle candidature reçue',
+        message: `Vous avez reçu une nouvelle candidature pour l'offre "${withRelations.offre.descriptions}".`,
+        data: { offreId: withRelations.offreId, postulerId: saved.id },
+      });
+    }
+
+    return saved;
   }
 
   /**
@@ -94,7 +115,45 @@ export class PostulerService {
     const postuler = await this.findOne(id);
     postuler.statut_candidature = dto.statut;
     postuler.updated_by = currentUser.id;
-    return this.postulerRepository.save(postuler);
+    const saved = await this.postulerRepository.save(postuler);
+
+    await this.notifyStatutChange(postuler, dto.statut);
+
+    return saved;
+  }
+
+  private async notifyStatutChange(
+    postuler: Postuler,
+    statut: StatutCandidature,
+  ): Promise<void> {
+    if (!postuler.etudiant) return;
+
+    let notificationType: NotificationType | null = null;
+    let titre = '';
+    let message = '';
+
+    switch (statut) {
+      case StatutCandidature.ACCEPTEE:
+        notificationType = NotificationType.CANDIDATURE_ACCEPTEE;
+        titre = 'Candidature acceptée';
+        message = `Votre candidature pour "${postuler.offre?.descriptions}" a été acceptée.`;
+        break;
+      case StatutCandidature.REFUSEE:
+        notificationType = NotificationType.CANDIDATURE_REFUSEE;
+        titre = 'Candidature refusée';
+        message = `Votre candidature pour "${postuler.offre?.descriptions}" a été refusée.`;
+        break;
+      default:
+        return; // EN_ATTENTE ou autre statut : pas de notification
+    }
+
+    await this.notificationService.create({
+      userId: postuler.etudiant.userId,
+      type: notificationType,
+      titre,
+      message,
+      data: { offreId: postuler.offreId, postulerId: postuler.id },
+    });
   }
 
   /**
