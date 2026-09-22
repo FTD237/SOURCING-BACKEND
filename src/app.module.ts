@@ -16,6 +16,7 @@ import { MailModule } from './mail/mail.module';
 import { FileModule } from './file/file.module';
 import { PostulerModule } from './postuler/postuler.module';
 import { EtudiantSkillModule } from './etudiant-skill/etudiant-skill.module';
+import { NotificationModule } from './notifications/notification.module';
 
 @Module({
   imports: [
@@ -83,6 +84,7 @@ import { EtudiantSkillModule } from './etudiant-skill/etudiant-skill.module';
     FileModule,
     PostulerModule,
     EtudiantSkillModule,
+    NotificationModule,
   ],
 })
 export class AppModule {}

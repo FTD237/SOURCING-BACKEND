@@ -10,9 +10,12 @@ import { CreatePostulerDto } from './dto/create-postuler.dto';
 import { UpdatePostulerStatutDto } from './dto/update-postuler-statut.dto';
 import { StatutCandidature } from '../common/enum/statut-candidature.enum';
 import { Statut } from '../common/enum/statut.enum';
+import { NotificationService } from '../notifications/notification.service';
+import { NotificationType } from '../common/enum/notification-type.enum';
 
 describe('PostulerService', () => {
   let service: PostulerService;
+  let notificationService: jest.Mocked<NotificationService>;
   let repository: jest.Mocked<Repository<Postuler>>;
 
   const currentUser = { id: 'user-1', email: 'user@test.com' };
@@ -38,10 +41,17 @@ describe('PostulerService', () => {
             save: jest.fn(),
           },
         },
+        {
+          provide: NotificationService,
+          useValue: {
+            create: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
     service = module.get<PostulerService>(PostulerService);
+    notificationService = module.get(NotificationService);
     repository = module.get(getRepositoryToken(Postuler));
   });
 
@@ -53,22 +63,42 @@ describe('PostulerService', () => {
       etudiantId: 'etudiant-1',
     };
 
-    it("crée une candidature quand aucune n'existe déjà", async () => {
-      repository.findOne.mockResolvedValue(null);
+    const withRelations: Postuler = {
+      ...mockPostuler,
+      offre: {
+        descriptions: 'Développeur Backend',
+        company: { user_id: 'company-user-1' },
+      },
+      etudiant: { userId: 'etudiant-1' },
+    } as Postuler;
+
+    it("crée une candidature et notifie l'entreprise quand aucune candidature n'existe déjà", async () => {
+      repository.findOne
+        .mockResolvedValueOnce(null) // vérification d'existence
+        .mockResolvedValueOnce(withRelations); // rechargement avec relations
       repository.create.mockReturnValue(mockPostuler);
       repository.save.mockResolvedValue(mockPostuler);
 
       const result = await service.create(dto, currentUser);
 
-      expect(repository.findOne).toHaveBeenCalledWith({
+      expect(repository.findOne).toHaveBeenNthCalledWith(1, {
         where: { offreId: dto.offreId, etudiantId: dto.etudiantId },
       });
       expect(repository.create).toHaveBeenCalledWith(dto);
       expect(repository.save).toHaveBeenCalledWith(mockPostuler);
       expect(result).toEqual(mockPostuler);
+
+      expect(notificationService.create).toHaveBeenCalledWith({
+        userId: 'company-user-1',
+        type: NotificationType.CANDIDATURE_RECUE,
+        titre: 'Nouvelle candidature reçue',
+        message:
+          'Vous avez reçu une nouvelle candidature pour l\'offre "Développeur Backend".',
+        data: { offreId: withRelations.offreId, postulerId: mockPostuler.id },
+      });
     });
 
-    it('lève un conflit si la candidature existe déjà', async () => {
+    it('lève un conflit si la candidature existe déjà et ne notifie pas', async () => {
       repository.findOne.mockResolvedValue(mockPostuler);
       const conflictSpy = jest
         .spyOn(ExceptionFactory, 'conflict')
@@ -81,6 +111,7 @@ describe('PostulerService', () => {
       );
       expect(conflictSpy).toHaveBeenCalled();
       expect(repository.save).not.toHaveBeenCalled();
+      expect(notificationService.create).not.toHaveBeenCalled();
     });
   });
 
@@ -151,8 +182,14 @@ describe('PostulerService', () => {
   });
 
   describe('updateStatut', () => {
-    it('met à jour le statut et audite le user', async () => {
-      repository.findOne.mockResolvedValue({ ...mockPostuler });
+    const postulerAvecRelations: Postuler = {
+      ...mockPostuler,
+      offre: { descriptions: 'Développeur Backend' },
+      etudiant: { userId: 'etudiant-1' },
+    } as Postuler;
+
+    it('met à jour le statut, audite le user et notifie en cas de statut ACCEPTEE', async () => {
+      repository.findOne.mockResolvedValue({ ...postulerAvecRelations });
       repository.save.mockImplementation((p) => Promise.resolve(p as Postuler));
 
       const dto: UpdatePostulerStatutDto = {
@@ -163,11 +200,63 @@ describe('PostulerService', () => {
       expect(result.statut_candidature).toBe(StatutCandidature.ACCEPTEE);
       expect(result.updated_by).toBe(currentUser.id);
       expect(repository.save).toHaveBeenCalled();
+
+      expect(notificationService.create).toHaveBeenCalledWith({
+        userId: 'etudiant-1',
+        type: NotificationType.CANDIDATURE_ACCEPTEE,
+        titre: 'Candidature acceptée',
+        message: 'Votre candidature pour "Développeur Backend" a été acceptée.',
+        data: {
+          offreId: postulerAvecRelations.offreId,
+          postulerId: 'postuler-1',
+        },
+      });
+    });
+
+    it('notifie avec le bon message en cas de statut REFUSEE', async () => {
+      repository.findOne.mockResolvedValue({ ...postulerAvecRelations });
+      repository.save.mockImplementation((p) => Promise.resolve(p as Postuler));
+
+      const dto: UpdatePostulerStatutDto = {
+        statut: StatutCandidature.REFUSEE,
+      };
+      await service.updateStatut('postuler-1', dto, currentUser);
+
+      expect(notificationService.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: NotificationType.CANDIDATURE_REFUSEE,
+          titre: 'Candidature refusée',
+        }),
+      );
+    });
+
+    it('ne notifie pas si le statut reste EN_ATTENTE', async () => {
+      repository.findOne.mockResolvedValue({ ...postulerAvecRelations });
+      repository.save.mockImplementation((p) => Promise.resolve(p as Postuler));
+
+      const dto: UpdatePostulerStatutDto = {
+        statut: StatutCandidature.EN_ATTENTE,
+      };
+      await service.updateStatut('postuler-1', dto, currentUser);
+
+      expect(notificationService.create).not.toHaveBeenCalled();
+    });
+
+    it("ne notifie pas si la candidature n'a pas de relation étudiant chargée", async () => {
+      repository.findOne.mockResolvedValue({ ...mockPostuler }); // pas de `etudiant`
+      repository.save.mockImplementation((p) => Promise.resolve(p as Postuler));
+
+      const dto: UpdatePostulerStatutDto = {
+        statut: StatutCandidature.ACCEPTEE,
+      };
+      await service.updateStatut('postuler-1', dto, currentUser);
+
+      expect(notificationService.create).not.toHaveBeenCalled();
     });
   });
 
   describe('remove', () => {
-    it('effectue un soft delete', async () => {
+    it('effectue un soft delete sans notifier', async () => {
       repository.findOne.mockResolvedValue({ ...mockPostuler });
       repository.save.mockResolvedValue({} as Postuler);
 
@@ -177,6 +266,7 @@ describe('PostulerService', () => {
       expect(savedArg.statut).toBe(Statut.SUPPRIME);
       expect(savedArg.dte_suppression).toBeInstanceOf(Date);
       expect(savedArg.updated_by).toBe(currentUser.id);
+      expect(notificationService.create).not.toHaveBeenCalled();
     });
 
     it('capture une erreur DB via ExceptionFactory.database', async () => {
