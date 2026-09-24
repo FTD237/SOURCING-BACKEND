@@ -1,5 +1,5 @@
 export type LocalisationCompany = {
-  lattitude: number;
-  longtitude: number;
+  latitude: number;
+  longitude: number;
   nom: string;
 };

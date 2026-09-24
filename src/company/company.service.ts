@@ -9,7 +9,7 @@ import {
   CreateCompanyDto,
   CreateCompanyResponseDto,
   UpdateCompanyDto,
-} from './company.dto';
+} from './dto/company.dto';
 import { Statut } from '../common/enum/statut.enum';
 import { Roles } from '../common/enum/roles.enum';
 import { AccountCreationService } from '../common/services/account-creation.service';

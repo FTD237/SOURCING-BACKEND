@@ -4,11 +4,12 @@ import {
   IsString,
   IsNotEmpty,
   IsOptional,
-  IsObject,
+  ValidateNested,
 } from 'class-validator';
-import { Company } from './company.entity';
-import { User } from '../user/user.entity';
-import type { LocalisationCompany } from '../common/types/localisation-company';
+import { Company } from '../company.entity';
+import { User } from '../../user/user.entity';
+import { LocalisationCompanyDto } from './localisation-company.dto';
+import { Type } from 'class-transformer';
 
 export class CreateCompanyDto {
   // Informations User
@@ -32,10 +33,11 @@ export class CreateCompanyDto {
   @IsNotEmpty()
   country_code: string;
 
-  @ApiProperty()
+  @ApiProperty({ type: () => LocalisationCompanyDto, required: false })
   @IsOptional()
-  @IsObject()
-  localisation?: LocalisationCompany;
+  @ValidateNested()
+  @Type(() => LocalisationCompanyDto)
+  localisation?: LocalisationCompanyDto;
 }
 
 export class UpdateCompanyDto {
@@ -54,10 +56,11 @@ export class UpdateCompanyDto {
   @IsOptional()
   country_code?: string;
 
-  @ApiProperty()
+  @ApiProperty({ type: () => LocalisationCompanyDto, required: false })
   @IsOptional()
-  @IsObject()
-  localisation?: LocalisationCompany;
+  @ValidateNested()
+  @Type(() => LocalisationCompanyDto)
+  localisation?: LocalisationCompanyDto;
 }
 
 export class CreateCompanyResponseDto {
