@@ -22,6 +22,8 @@ describe('FormationService', () => {
   let service: FormationService;
   let formationRepo: MockFormationRepository;
 
+  const currentUser = { id: 'user-1' };
+
   const mockCreateDto: CreateFormationDto = {
     nom: 'Développement Full Stack',
     nbr_annee: 3,
@@ -83,7 +85,7 @@ describe('FormationService', () => {
       formationRepo.create.mockReturnValue(mockFormation);
       formationRepo.save.mockResolvedValue(mockFormation);
 
-      const result = await service.create(mockCreateDto);
+      const result = await service.create(mockCreateDto, currentUser);
 
       expect(formationRepo.create).toHaveBeenCalledWith(mockCreateDto);
       expect(formationRepo.save).toHaveBeenCalledWith(mockFormation);
@@ -96,7 +98,7 @@ describe('FormationService', () => {
       );
       formationRepo.save.mockRejectedValue(error);
 
-      await expect(service.create(mockCreateDto)).rejects.toThrow(
+      await expect(service.create(mockCreateDto, currentUser)).rejects.toThrow(
         'duplicate key value violates unique constraint "UQ_FORMATION_NOM"',
       );
     });
@@ -168,7 +170,11 @@ describe('FormationService', () => {
       };
       formationRepo.save.mockResolvedValue(updatedFormation);
 
-      const result = await service.update('formation-1', mockUpdateDto);
+      const result = await service.update(
+        'formation-1',
+        mockUpdateDto,
+        currentUser,
+      );
 
       expect(findOneSpy).toHaveBeenCalledWith('formation-1');
       expect(formationRepo.save).toHaveBeenCalledWith(
@@ -184,9 +190,13 @@ describe('FormationService', () => {
         statut: Statut.SUPPRIME,
       });
 
-      const result = await service.update('formation-1', {
-        statut: Statut.SUPPRIME,
-      });
+      const result = await service.update(
+        'formation-1',
+        {
+          statut: Statut.SUPPRIME,
+        },
+        currentUser,
+      );
 
       expect(formationRepo.save).toHaveBeenCalledWith(
         expect.objectContaining({ statut: Statut.SUPPRIME }),
@@ -201,9 +211,9 @@ describe('FormationService', () => {
           new NotFoundException('Formation #invalid-id introuvable'),
         );
 
-      await expect(service.update('invalid-id', mockUpdateDto)).rejects.toThrow(
-        'Formation #invalid-id introuvable',
-      );
+      await expect(
+        service.update('invalid-id', mockUpdateDto, currentUser),
+      ).rejects.toThrow('Formation #invalid-id introuvable');
       expect(formationRepo.save).not.toHaveBeenCalled();
     });
   });
@@ -221,7 +231,7 @@ describe('FormationService', () => {
         statut: Statut.SUPPRIME,
       });
 
-      await service.remove('formation-1');
+      await service.remove('formation-1', currentUser);
 
       expect(findOneSpy).toHaveBeenCalledWith('formation-1');
       expect(formationRepo.save).toHaveBeenCalledWith(
@@ -240,7 +250,7 @@ describe('FormationService', () => {
           new NotFoundException('Formation #invalid-id introuvable'),
         );
 
-      await expect(service.remove('invalid-id')).rejects.toThrow(
+      await expect(service.remove('invalid-id', currentUser)).rejects.toThrow(
         'Formation #invalid-id introuvable',
       );
       expect(formationRepo.save).not.toHaveBeenCalled();

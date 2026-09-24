@@ -10,6 +10,8 @@ import { CreateExperienceDto, UpdateExperienceDto } from './experience.dto';
 describe('ExperienceService', () => {
   let service: ExperienceService;
 
+  const currentUser = { id: 'user-1' };
+
   // Mocks déclarés comme variables indépendantes : on évite ainsi de
   // référencer des méthodes "unbound" via repo.xxx dans les assertions.
   const mockCreate = jest.fn();
@@ -77,7 +79,7 @@ describe('ExperienceService', () => {
       mockCreate.mockReturnValue(mockExperience);
       mockSave.mockResolvedValue(mockExperience);
 
-      const result = await service.create(dto);
+      const result = await service.create(dto, currentUser);
 
       expect(mockCreate).toHaveBeenCalledWith(dto);
       expect(mockSave).toHaveBeenCalledWith(mockExperience);
@@ -153,7 +155,7 @@ describe('ExperienceService', () => {
       mockFindOne.mockResolvedValue(mockExperience);
       mockSave.mockResolvedValue(updated);
 
-      const result = await service.update('exp-1', dto);
+      const result = await service.update('exp-1', dto, currentUser);
 
       expect(mockSave).toHaveBeenCalledWith(expect.objectContaining(dto));
       expect(result).toEqual(updated);
@@ -162,7 +164,7 @@ describe('ExperienceService', () => {
     it("devrait lever une NotFoundException si l'expérience à mettre à jour n'existe pas", async () => {
       mockFindOne.mockResolvedValue(null);
 
-      await expect(service.update('inconnu', {})).rejects.toThrow(
+      await expect(service.update('inconnu', {}, currentUser)).rejects.toThrow(
         NotFoundException,
       );
       expect(mockSave).not.toHaveBeenCalled();
@@ -174,7 +176,7 @@ describe('ExperienceService', () => {
       mockFindOne.mockResolvedValue(buildExperience());
       mockSave.mockResolvedValue(mockExperience);
 
-      await service.remove('exp-1');
+      await service.remove('exp-1', currentUser);
 
       expect(mockSave).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -187,7 +189,7 @@ describe('ExperienceService', () => {
     it("devrait lever une NotFoundException si l'expérience à supprimer n'existe pas", async () => {
       mockFindOne.mockResolvedValue(null);
 
-      await expect(service.remove('inconnu')).rejects.toThrow(
+      await expect(service.remove('inconnu', currentUser)).rejects.toThrow(
         NotFoundException,
       );
       expect(mockSave).not.toHaveBeenCalled();

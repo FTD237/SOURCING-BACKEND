@@ -22,13 +22,14 @@ import {
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { RolesGuard } from '../guards/roles.guard';
-import { Roles } from '../decorators/roles.decorator';
 import { Roles as RolesEnum } from '../common/enum/roles.enum';
 import { Experience } from './experience.entity';
 import {
   ApiCrudErrorResponses,
   ApiUuidParam,
 } from '../decorators/api-common-response.decorator';
+import { Roles } from '../decorators/roles.decorator';
+import { GetUser } from '../auth/get-user.decorator';
 
 /**
  * Gère le cycle de vie des expériences étudiantes (création, consultation,
@@ -42,6 +43,7 @@ import {
 @ApiTags('Experience')
 @Controller('experiences')
 @UseGuards(JwtAuthGuard, RolesGuard)
+@ApiBearerAuth()
 export class ExperienceController {
   constructor(private readonly experienceService: ExperienceService) {}
 
@@ -49,13 +51,13 @@ export class ExperienceController {
    * Crée une expérience pour un étudiant.
    *
    * @param dto - Informations de l'expérience à créer.
+   * @param currentUser
    * @returns L'expérience nouvellement créée.
    * @throws BadRequestException si une expérience équivalente existe déjà (400).
    */
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @Roles(RolesEnum.ADMIN, RolesEnum.MANAGER, RolesEnum.SUPERADMIN)
-  @ApiBearerAuth('JWT-auth')
+  @Roles(RolesEnum.ETUDIANT, RolesEnum.MANAGER)
   @ApiOperation({
     summary: 'Créer une expérience',
     description:
@@ -71,8 +73,11 @@ export class ExperienceController {
   @ApiCrudErrorResponses({
     badRequest: 'Expérience existante ou données invalides',
   })
-  create(@Body() dto: CreateExperienceDto): Promise<Experience> {
-    return this.experienceService.create(dto);
+  create(
+    @Body() dto: CreateExperienceDto,
+    @GetUser() currentUser: { id: string },
+  ): Promise<Experience> {
+    return this.experienceService.create(dto, currentUser);
   }
 
   /**
@@ -82,7 +87,6 @@ export class ExperienceController {
    */
   @Get()
   @Roles(RolesEnum.RH, RolesEnum.MANAGER, RolesEnum.ADMIN, RolesEnum.SUPERADMIN)
-  @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: 'Lister les expériences',
     description:
@@ -114,7 +118,6 @@ export class ExperienceController {
     RolesEnum.ADMIN,
     RolesEnum.SUPERADMIN,
   )
-  @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: "Récupérer les expériences d'un étudiant",
     description:
@@ -143,7 +146,6 @@ export class ExperienceController {
    */
   @Get(':id')
   @Roles(RolesEnum.RH, RolesEnum.MANAGER, RolesEnum.ADMIN, RolesEnum.SUPERADMIN)
-  @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: 'Récupérer une expérience par son id',
     description:
@@ -165,13 +167,13 @@ export class ExperienceController {
    *
    * @param id - Identifiant UUID de l'expérience à modifier.
    * @param dto - Champs à mettre à jour (partiels).
+   * @param currentUser
    * @returns L'expérience mise à jour.
    * @throws NotFoundException si aucune expérience ne correspond à `id` (404).
    * @throws BadRequestException si les données fournies sont invalides (400).
    */
   @Put(':id')
-  @Roles(RolesEnum.ADMIN, RolesEnum.MANAGER, RolesEnum.SUPERADMIN)
-  @ApiBearerAuth('JWT-auth')
+  @Roles(RolesEnum.ADMIN, RolesEnum.MANAGER, RolesEnum.ETUDIANT)
   @ApiOperation({
     summary: 'Modifier une expérience',
     description:
@@ -188,20 +190,21 @@ export class ExperienceController {
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateExperienceDto,
+    @GetUser() currentUser: { id: string },
   ): Promise<Experience> {
-    return this.experienceService.update(id, dto);
+    return this.experienceService.update(id, dto, currentUser);
   }
 
   /**
    * Supprime (logiquement) une expérience.
    *
    * @param id - Identifiant UUID de l'expérience à supprimer.
+   * @param currentUser
    * @throws NotFoundException si aucune expérience ne correspond à `id` (404).
    */
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @Roles(RolesEnum.ADMIN, RolesEnum.MANAGER, RolesEnum.SUPERADMIN)
-  @ApiBearerAuth('JWT-auth')
+  @Roles(RolesEnum.ADMIN, RolesEnum.MANAGER, RolesEnum.ETUDIANT)
   @ApiOperation({
     summary: 'Supprimer une expérience',
     description:
@@ -214,7 +217,10 @@ export class ExperienceController {
     description: 'Expérience supprimée avec succès',
   })
   @ApiCrudErrorResponses({ notFound: 'Expérience' })
-  remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
-    return this.experienceService.remove(id);
+  remove(
+    @Param('id', ParseUUIDPipe) id: string,
+    @GetUser() currentUser: { id: string },
+  ): Promise<void> {
+    return this.experienceService.remove(id, currentUser);
   }
 }

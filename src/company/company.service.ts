@@ -49,6 +49,7 @@ export class CompanyService {
             country_code: dto.country_code,
             statut: Statut.ACTIF,
             create_by: currentUser.id,
+            dte_creation: new Date(),
           });
           return manager.save(company);
         },
@@ -91,6 +92,7 @@ export class CompanyService {
     await this.companyRepository.update(id, {
       ...companyFields,
       updated_by: currentUser.id,
+      dte_modif: new Date(),
     });
     return this.companyRepository.findOne({
       where: { id },

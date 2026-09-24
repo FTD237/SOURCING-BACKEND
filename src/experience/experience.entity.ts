@@ -4,15 +4,14 @@ import {
   Column,
   ManyToOne,
   JoinColumn,
-  CreateDateColumn,
-  UpdateDateColumn,
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { Etudiant } from '../etudiant/etudiant.entity';
-import { Statut } from '../common/enum/statut.enum';
+import { AuditableEntity } from '../entity/auditable.entity';
+import { Company } from '../company/company.entity';
 
 @Entity('experience')
-export class Experience {
+export class Experience extends AuditableEntity {
   @ApiProperty({ example: '1aec5bef-7a21-47d1-b7f5-c2a3e1b57023' })
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -26,9 +25,17 @@ export class Experience {
   @JoinColumn({ name: 'student_id' })
   etudiant: Etudiant;
 
-  @ApiProperty({ example: '1aec5bef-7a21-47d1-b7f5-c2a3e1b57023' })
-  @Column()
+  @ApiProperty({
+    example: '1aec5bef-7a21-47d1-b7f5-c2a3e1b57023',
+    required: false,
+  })
+  @Column({ nullable: true })
   company_id: string;
+
+  @ApiProperty({ type: () => Company })
+  @ManyToOne(() => Company, { nullable: true })
+  @JoinColumn({ name: 'company_id' })
+  company: Company | null;
 
   @ApiProperty({ example: "Développement d'une plateforme web de E-learning" })
   @Column()
@@ -49,28 +56,4 @@ export class Experience {
   @ApiProperty({ example: '2026-04-17' })
   @Column({ type: 'date' })
   date_fin: Date;
-
-  @ApiProperty()
-  @CreateDateColumn()
-  dte_creation: Date;
-
-  @ApiProperty()
-  @UpdateDateColumn()
-  dte_modif: Date;
-
-  @ApiProperty({ enum: Statut, example: Statut.ACTIF })
-  @Column({ default: Statut.ACTIF, type: 'enum', enum: Statut })
-  statut: Statut;
-
-  @ApiProperty({ required: false })
-  @Column({ nullable: true })
-  dte_suppression: Date;
-
-  @ApiProperty({ required: false })
-  @Column({ nullable: true })
-  create_by: number;
-
-  @ApiProperty({ required: false })
-  @Column({ nullable: true })
-  updated_by: number;
 }
