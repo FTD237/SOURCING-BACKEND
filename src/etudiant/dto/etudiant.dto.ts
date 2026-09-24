@@ -10,10 +10,14 @@ import {
   Min,
   Max,
   IsEnum,
+  ValidateNested,
 } from 'class-validator';
-import { User } from '../user/user.entity';
-import { Etudiant } from './etudiant.entity';
-import { Statut } from '../common/enum/statut.enum';
+import { User } from '../../user/user.entity';
+import { Etudiant } from '../etudiant.entity';
+import { Statut } from '../../common/enum/statut.enum';
+import type { LiensUtiles } from '../../common/types/liens-utiles';
+import { LiensUtilesDto } from './liens-utiles.dto';
+import { Type } from 'class-transformer';
 
 export class CreateEtudiantDto {
   // Informations User
@@ -59,6 +63,17 @@ export class CreateEtudiantDto {
   @Min(0)
   @Max(5)
   star_rate?: number;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  bio?: string;
+
+  @ApiProperty({ type: () => LiensUtilesDto, required: false })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => LiensUtilesDto)
+  liens?: LiensUtiles;
 }
 
 export class UpdateEtudiantDto {
@@ -107,6 +122,17 @@ export class UpdateEtudiantDto {
   @IsOptional()
   @IsEnum(Statut)
   statut?: Statut;
+
+  @ApiProperty({ type: () => LiensUtilesDto, required: false })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => LiensUtilesDto)
+  liens?: LiensUtiles;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  bio?: string;
 }
 
 export class CreateEtudiantResponseDto {
