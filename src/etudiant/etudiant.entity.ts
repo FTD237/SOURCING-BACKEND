@@ -12,6 +12,7 @@ import { User } from '../user/user.entity';
 import { AuditableEntity } from '../entity/auditable.entity';
 import { Postuler } from '../postuler/postuler.entity';
 import { EtudiantSkill } from '../etudiant-skill/etudiant-skill.entity';
+import type { LiensUtiles } from '../common/types/liens-utiles';
 
 @Entity('etudiant')
 @Unique('UQ_ETUDIANT_MATRICULE', ['matricule'])
@@ -56,4 +57,18 @@ export class Etudiant extends AuditableEntity {
   @ApiProperty({ type: () => [EtudiantSkill] })
   @OneToMany(() => EtudiantSkill, (etudiantSkill) => etudiantSkill.etudiant)
   etudiantSkills: EtudiantSkill[];
+
+  @ApiProperty({ example: 'je suis blablablablablablablablabla' })
+  @Column({ nullable: true })
+  bio: string;
+
+  @ApiProperty({
+    example: {
+      github: 'https://github.com/je suis',
+      linkedin: 'https://www.linkedin.com/in/je-suis/',
+      portfolio: 'https://www.portfolio.com/je-suis',
+    },
+  })
+  @Column({ type: 'jsonb', nullable: true })
+  liens: LiensUtiles;
 }

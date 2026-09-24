@@ -7,7 +7,7 @@ import {
   CreateEtudiantDto,
   CreateEtudiantResponseDto,
   UpdateEtudiantDto,
-} from './etudiant.dto';
+} from './dto/etudiant.dto';
 import { Statut } from '../common/enum/statut.enum';
 import { Etudiant } from './etudiant.entity';
 import { createControllerTestingModule } from '../../test/support/create-controller-testing-module';
@@ -38,6 +38,8 @@ describe('EtudiantController', () => {
     matricule: 'mat-1',
     annee_acad: '2027-2028',
     country_code: 'CM',
+    bio: 'Bio',
+    liens: { github: 'http:github.com' },
   } as CreateEtudiantDto;
 
   const mockUpdateDto: UpdateEtudiantDto = {
