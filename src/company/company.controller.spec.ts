@@ -5,7 +5,7 @@ import {
   CreateCompanyDto,
   CreateCompanyResponseDto,
   UpdateCompanyDto,
-} from './company.dto';
+} from './dto/company.dto';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { RolesGuard } from '../guards/roles.guard';
 import { User } from '../user/user.entity';

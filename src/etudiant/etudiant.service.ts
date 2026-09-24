@@ -90,6 +90,7 @@ export class EtudiantService {
         star_rate: dto.star_rate || 0,
         statut: Statut.ACTIF,
         create_by: createdBy,
+        dte_creation: new Date(),
       });
 
       savedEtudiant = await queryRunner.manager.save(etudiant);
@@ -166,6 +167,7 @@ export class EtudiantService {
     await this.etudiantRepo.update(id, {
       ...etudiantFields,
       updated_by: currentUser.id,
+      dte_modif: new Date(),
     });
 
     return this.etudiantRepo.findOne({

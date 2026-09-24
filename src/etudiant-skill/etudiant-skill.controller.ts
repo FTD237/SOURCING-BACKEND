@@ -9,7 +9,12 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
-import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { EtudiantSkillService } from './etudiant-skill.service';
 import { CreateEtudiantSkillDto } from './dto/create-etudiant-skill.dto';
 import { UpdateEtudiantSkillDto } from './dto/update-etudiant-skill.dto';
@@ -24,6 +29,7 @@ import { GetUser } from '../auth/get-user.decorator';
 @Controller('etudiant-skills')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(RolesEnum.ETUDIANT, RolesEnum.RH, RolesEnum.MANAGER)
+@ApiBearerAuth()
 export class EtudiantSkillController {
   constructor(private readonly etudiantSkillService: EtudiantSkillService) {}
 

@@ -26,7 +26,7 @@ import {
   CreateCompanyDto,
   CreateCompanyResponseDto,
   UpdateCompanyDto,
-} from './company.dto';
+} from './dto/company.dto';
 import { Roles } from '../decorators/roles.decorator';
 import { Company } from './company.entity';
 import {

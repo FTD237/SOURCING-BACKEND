@@ -9,7 +9,7 @@ import {
   CreateCompanyDto,
   CreateCompanyResponseDto,
   UpdateCompanyDto,
-} from './company.dto';
+} from './dto/company.dto';
 import { Statut } from '../common/enum/statut.enum';
 import { Roles } from '../common/enum/roles.enum';
 import { AccountCreationService } from '../common/services/account-creation.service';
@@ -49,6 +49,7 @@ export class CompanyService {
             country_code: dto.country_code,
             statut: Statut.ACTIF,
             create_by: currentUser.id,
+            dte_creation: new Date(),
           });
           return manager.save(company);
         },
@@ -91,6 +92,7 @@ export class CompanyService {
     await this.companyRepository.update(id, {
       ...companyFields,
       updated_by: currentUser.id,
+      dte_modif: new Date(),
     });
     return this.companyRepository.findOne({
       where: { id },

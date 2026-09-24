@@ -28,6 +28,7 @@ import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { RolesGuard } from '../guards/roles.guard';
 import { Roles } from '../decorators/roles.decorator';
 import { Roles as RolesEnum } from '../common/enum/roles.enum';
+import { GetUser } from '../auth/get-user.decorator';
 
 /**
  * Gère le référentiel des formations proposées (création, consultation,
@@ -82,8 +83,11 @@ export class FormationController {
     status: 409,
     description: 'Une formation avec ce nom (ou ce code) existe déjà',
   })
-  create(@Body() dto: CreateFormationDto): Promise<Formation> {
-    return this.formationService.create(dto);
+  create(
+    @Body() dto: CreateFormationDto,
+    @GetUser() currentUser: { id: string },
+  ): Promise<Formation> {
+    return this.formationService.create(dto, currentUser);
   }
 
   /**
@@ -195,8 +199,9 @@ export class FormationController {
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateFormationDto,
+    @GetUser() currentUser: { id: string },
   ): Promise<Formation> {
-    return this.formationService.update(id, dto);
+    return this.formationService.update(id, dto, currentUser);
   }
 
   /**
@@ -236,7 +241,10 @@ export class FormationController {
     status: 404,
     description: 'Aucune formation ne correspond à cet ID',
   })
-  remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
-    return this.formationService.remove(id);
+  remove(
+    @Param('id', ParseUUIDPipe) id: string,
+    @GetUser() currentUser: { id: string },
+  ): Promise<void> {
+    return this.formationService.remove(id, currentUser);
   }
 }

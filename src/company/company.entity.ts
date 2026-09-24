@@ -12,6 +12,7 @@ import { User } from '../user/user.entity';
 import { Country } from '../entity/country.entity';
 import { AuditableEntity } from '../entity/auditable.entity';
 import { Offre } from '../offre/offre.entity';
+import type { LocalisationCompany } from '../common/types/localisation-company';
 
 @Entity('company')
 export class Company extends AuditableEntity {
@@ -40,4 +41,14 @@ export class Company extends AuditableEntity {
   @ApiProperty({ type: () => [Offre] })
   @OneToMany(() => Offre, (offre) => offre.company)
   offres: Offre[];
+
+  @ApiProperty({
+    example: {
+      latitude: 3.848032,
+      longitude: 11.502075,
+      nom: 'MTN cam',
+    },
+  })
+  @Column({ type: 'jsonb', nullable: true})
+  localisation: LocalisationCompany;
 }

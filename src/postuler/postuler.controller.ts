@@ -48,7 +48,7 @@ export class PostulerController {
     status: 409,
     description: 'Cet étudiant a déjà postulé à cette offre.',
   })
-  @Roles(RolesEnum.RH)
+  @Roles(RolesEnum.ETUDIANT, RolesEnum.MANAGER)
   create(
     @Body() dto: CreatePostulerDto,
     @GetUser() currentUser: { id: string; email: string },
@@ -67,7 +67,7 @@ export class PostulerController {
     description: 'Liste des candidatures.',
     type: [Postuler],
   })
-  @Roles(RolesEnum.MANAGER, RolesEnum.ETUDIANT)
+  @Roles(RolesEnum.MANAGER, RolesEnum.ETUDIANT, RolesEnum.RH, RolesEnum.ADMIN)
   findAll(): Promise<Postuler[]> {
     return this.postulerService.findAll();
   }
@@ -98,7 +98,7 @@ export class PostulerController {
     description: "Candidatures de l'étudiant.",
     type: [Postuler],
   })
-  @Roles(RolesEnum.MANAGER, RolesEnum.RH)
+  @Roles(RolesEnum.MANAGER, RolesEnum.ETUDIANT)
   findByEtudiant(@Param('etudiantId') etudiantId: string): Promise<Postuler[]> {
     return this.postulerService.findByEtudiant(etudiantId);
   }
@@ -115,7 +115,7 @@ export class PostulerController {
     description: "Candidatures reçues pour l'offre.",
     type: [Postuler],
   })
-  @Roles(RolesEnum.MANAGER, RolesEnum.ETUDIANT, RolesEnum.RH)
+  @Roles(RolesEnum.MANAGER, RolesEnum.RH)
   findByOffre(@Param('offreId') offreId: string): Promise<Postuler[]> {
     return this.postulerService.findByOffre(offreId);
   }

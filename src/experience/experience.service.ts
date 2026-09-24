@@ -12,8 +12,13 @@ export class ExperienceService {
     private readonly expRepo: Repository<Experience>,
   ) {}
 
-  async create(dto: CreateExperienceDto): Promise<Experience> {
+  async create(
+    dto: CreateExperienceDto,
+    currentUser: { id: string },
+  ): Promise<Experience> {
     const exp = this.expRepo.create(dto);
+    exp.create_by = currentUser.id;
+    exp.dte_creation = new Date();
     return this.expRepo.save(exp);
   }
 
@@ -37,16 +42,23 @@ export class ExperienceService {
     return exp;
   }
 
-  async update(id: string, dto: UpdateExperienceDto): Promise<Experience> {
+  async update(
+    id: string,
+    dto: UpdateExperienceDto,
+    currentUser: { id: string },
+  ): Promise<Experience> {
     const exp = await this.findOne(id);
+    exp.dte_modif = new Date();
+    exp.updated_by = currentUser.id;
     Object.assign(exp, dto);
     return this.expRepo.save(exp);
   }
 
-  async remove(id: string): Promise<void> {
+  async remove(id: string, currentUser: { id: string }): Promise<void> {
     const exp = await this.findOne(id);
     exp.statut = Statut.SUPPRIME;
     exp.dte_suppression = new Date();
+    exp.updated_by = currentUser.id;
     await this.expRepo.save(exp);
   }
 }

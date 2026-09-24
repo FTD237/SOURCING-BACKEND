@@ -10,6 +10,8 @@ import { Statut } from '../common/enum/statut.enum';
 describe('ExperienceController', () => {
   let controller: ExperienceController;
 
+  const currentUser = { id: 'user-1' };
+
   const mockCreate = jest.fn();
   const mockFindAll = jest.fn();
   const mockFindByEtudiant = jest.fn();
@@ -74,9 +76,9 @@ describe('ExperienceController', () => {
       };
       mockCreate.mockResolvedValue(mockExperience);
 
-      const result = await controller.create(dto);
+      const result = await controller.create(dto, currentUser);
 
-      expect(mockCreate).toHaveBeenCalledWith(dto);
+      expect(mockCreate).toHaveBeenCalledWith(dto, currentUser);
       expect(result).toEqual(mockExperience);
     });
   });
@@ -146,9 +148,9 @@ describe('ExperienceController', () => {
       const updated = buildExperience({ statut: Statut.INACTIF });
       mockUpdate.mockResolvedValue(updated);
 
-      const result = await controller.update('exp-1', dto);
+      const result = await controller.update('exp-1', dto, currentUser);
 
-      expect(mockUpdate).toHaveBeenCalledWith('exp-1', dto);
+      expect(mockUpdate).toHaveBeenCalledWith('exp-1', dto, currentUser);
       expect(result).toEqual(updated);
     });
 
@@ -157,9 +159,9 @@ describe('ExperienceController', () => {
         new NotFoundException('Expérience #inconnu introuvable'),
       );
 
-      await expect(controller.update('inconnu', {})).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        controller.update('inconnu', {}, currentUser),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -167,9 +169,9 @@ describe('ExperienceController', () => {
     it('devrait supprimer (soft delete) une expérience', async () => {
       mockRemove.mockResolvedValue(undefined);
 
-      const result = await controller.remove('exp-1');
+      const result = await controller.remove('exp-1', currentUser);
 
-      expect(mockRemove).toHaveBeenCalledWith('exp-1');
+      expect(mockRemove).toHaveBeenCalledWith('exp-1', currentUser);
       expect(result).toBeUndefined();
     });
 
@@ -178,7 +180,7 @@ describe('ExperienceController', () => {
         new NotFoundException('Expérience #inconnu introuvable'),
       );
 
-      await expect(controller.remove('inconnu')).rejects.toThrow(
+      await expect(controller.remove('inconnu', currentUser)).rejects.toThrow(
         NotFoundException,
       );
     });
