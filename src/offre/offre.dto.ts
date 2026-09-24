@@ -2,11 +2,14 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import {
   IsArray,
+  IsDate,
+  IsEnum,
   IsNotEmpty,
   IsOptional,
   IsString,
   IsUUID,
 } from 'class-validator';
+import { TypeOffre } from '../common/enum/type-offre.enum';
 
 export class CreateOffreDto {
   @ApiPropertyOptional({
@@ -33,6 +36,29 @@ export class CreateOffreDto {
   @IsNotEmpty({ message: 'skillIds ne peut pas être vide' })
   @IsUUID('all', { each: true })
   skillIds: string[];
+
+  @ApiProperty({
+    enum: TypeOffre,
+    enumName: 'TypeOffre',
+    example: TypeOffre.STAGE_ACADEMIQUE,
+  })
+  @IsNotEmpty({ message: "Le type d'offre doit être renseigner" })
+  @IsEnum(TypeOffre)
+  type_offre: TypeOffre;
+
+  @IsNotEmpty()
+  @IsString()
+  titre: string;
+
+  @ApiProperty({ format: 'date-time' })
+  @IsDate()
+  @IsNotEmpty()
+  dte_debut: Date;
+
+  @ApiProperty({ format: 'date-time' })
+  @IsDate()
+  @IsNotEmpty()
+  dte_fin: Date;
 }
 
 export class UpdateOffreDto extends PartialType(CreateOffreDto) {}
