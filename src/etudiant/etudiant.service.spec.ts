@@ -6,12 +6,13 @@ import { Etudiant } from './etudiant.entity';
 import { User } from '../user/user.entity';
 import { Role } from '../entity/role.entity';
 import { Statut } from '../common/enum/statut.enum';
-import { CreateEtudiantDto, UpdateEtudiantDto } from './etudiant.dto';
+import { CreateEtudiantDto, UpdateEtudiantDto } from './dto/etudiant.dto';
 import { buildEtudiant } from '../../test/factories/etudiant.factory';
 import { buildUser } from '../../test/factories/user.factory';
 import { ActivationTokenService } from '../common/services/activation-token.service';
 import { MailService } from '../mail/mail.service';
 import { NotFoundException } from '@nestjs/common';
+import { LinkCheckerService } from '../common/services/link-checker.service';
 
 describe('EtudiantService', () => {
   let service: EtudiantService;
@@ -65,6 +66,9 @@ describe('EtudiantService', () => {
 
   const mockUser = buildUser();
   const mockEtudiant = buildEtudiant();
+  const mockLinkCheckerService = {
+    validateLinksOrThrow: jest.fn(),
+  };
 
   const currentUser = { id: 'admin-1', email: 'admin@example.com' };
 
@@ -74,6 +78,7 @@ describe('EtudiantService', () => {
       id: 'role-etudiant-1',
       nom: 'etudiant',
     });
+    mockLinkCheckerService.validateLinksOrThrow.mockResolvedValue(undefined);
     mockQueryRunnerManager.create
       .mockReturnValueOnce(mockUser)
       .mockReturnValueOnce(mockEtudiant);
@@ -102,6 +107,7 @@ describe('EtudiantService', () => {
           useValue: mockActivationTokenService,
         },
         { provide: MailService, useValue: mockMailService },
+        { provide: LinkCheckerService, useValue: mockLinkCheckerService },
       ],
     }).compile();
 
@@ -187,6 +193,56 @@ describe('EtudiantService', () => {
       const result = await service.create(dto, currentUser);
 
       expect(result).toEqual({ user: mockUser, etudiant: mockEtudiant });
+    });
+    describe('create — validation des liens', () => {
+      it('devrait appeler validateLinksOrThrow si dto.liens est fourni', async () => {
+        setupSuccessfulCreationMocks();
+        mockMailService.sendAccountActivationMail.mockResolvedValue(undefined);
+
+        const dtoAvecLiens: CreateEtudiantDto = {
+          ...dto,
+          liens: { github: 'https://github.com/johndoe' },
+        };
+
+        await service.create(dtoAvecLiens, currentUser);
+
+        expect(
+          mockLinkCheckerService.validateLinksOrThrow,
+        ).toHaveBeenCalledWith(dtoAvecLiens.liens);
+      });
+
+      it('ne devrait pas appeler validateLinksOrThrow si dto.liens est absent', async () => {
+        setupSuccessfulCreationMocks();
+        mockMailService.sendAccountActivationMail.mockResolvedValue(undefined);
+
+        await service.create(dto, currentUser); // dto sans "liens"
+
+        expect(
+          mockLinkCheckerService.validateLinksOrThrow,
+        ).not.toHaveBeenCalled();
+      });
+
+      it('devrait rejeter la création si un lien est inaccessible, sans ouvrir de transaction DB', async () => {
+        mockUserRepo.findOne.mockResolvedValue(null);
+        mockRoleRepo.findOne.mockResolvedValue({
+          id: 'role-etudiant-1',
+          nom: 'etudiant',
+        });
+        mockLinkCheckerService.validateLinksOrThrow.mockRejectedValue(
+          new Error('Lien(s) inaccessible(s) : github (https://site-down.com)'),
+        );
+
+        const dtoAvecLiens: CreateEtudiantDto = {
+          ...dto,
+          liens: { github: 'https://site-down.com' },
+        };
+
+        await expect(service.create(dtoAvecLiens, currentUser)).rejects.toThrow(
+          'Lien(s) inaccessible(s)',
+        );
+
+        expect(mockQueryRunner.connect).not.toHaveBeenCalled();
+      });
     });
   });
   describe('findAll', () => {
