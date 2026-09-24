@@ -42,6 +42,7 @@ import { Roles } from '../decorators/roles.decorator';
 @ApiTags('Etudiant')
 @Controller('etudiants')
 @UseGuards(JwtAuthGuard, RolesGuard)
+@ApiBearerAuth()
 export class EtudiantController {
   constructor(private readonly etudiantService: EtudiantService) {}
 
@@ -58,7 +59,6 @@ export class EtudiantController {
    */
   @Post()
   @Roles(RolesEnum.ADMIN, RolesEnum.MANAGER, RolesEnum.SUPERADMIN)
-  @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: 'Créer un étudiant (utilisateur + profil)',
     description:
@@ -87,7 +87,6 @@ export class EtudiantController {
    */
   @Get()
   @Roles(RolesEnum.RH, RolesEnum.MANAGER, RolesEnum.ADMIN, RolesEnum.SUPERADMIN)
-  @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: 'Lister les étudiants',
     description:
@@ -120,7 +119,6 @@ export class EtudiantController {
     RolesEnum.SUPERADMIN,
     RolesEnum.ETUDIANT,
   )
-  @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: 'Récupérer un étudiant par son id',
     description:
@@ -155,7 +153,6 @@ export class EtudiantController {
     RolesEnum.SUPERADMIN,
     RolesEnum.MANAGER,
   )
-  @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: "Modifier les informations d'un étudiant",
     description:
@@ -187,7 +184,6 @@ export class EtudiantController {
    */
   @Delete(':id')
   @Roles(RolesEnum.MANAGER, RolesEnum.ADMIN, RolesEnum.SUPERADMIN)
-  @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: 'Supprimer un étudiant',
     description:

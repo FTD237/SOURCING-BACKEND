@@ -14,6 +14,7 @@ import { AuditableEntity } from '../entity/auditable.entity';
 import { ApiProperty } from '@nestjs/swagger';
 import { Company } from '../company/company.entity';
 import { Skill } from '../skills/skill.entity';
+import { TypeOffre } from '../common/enum/type-offre.enum';
 
 @Entity('offre')
 export class Offre extends AuditableEntity {
@@ -52,4 +53,24 @@ export class Offre extends AuditableEntity {
     inverseJoinColumn: { name: 'skillId', referencedColumnName: 'id' },
   })
   skills: Skill[];
+
+  @ApiProperty({ format: 'date-time' })
+  @Column()
+  dte_debut: Date;
+
+  @ApiProperty({ format: 'date-time' })
+  @Column()
+  dte_fin: Date;
+
+  @ApiProperty({
+    enum: TypeOffre,
+    enumName: 'TypeOffre',
+    example: TypeOffre.STAGE_ACADEMIQUE,
+  })
+  @Column()
+  type_offre: string;
+
+  @ApiProperty({ example: 'Stage - chef projet' })
+  @Column()
+  titre: string;
 }

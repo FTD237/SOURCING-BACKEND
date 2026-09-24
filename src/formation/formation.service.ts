@@ -12,8 +12,13 @@ export class FormationService {
     private readonly formationRepo: Repository<Formation>,
   ) {}
 
-  async create(dto: CreateFormationDto): Promise<Formation> {
+  async create(
+    dto: CreateFormationDto,
+    currentUser: { id: string },
+  ): Promise<Formation> {
     const formation = this.formationRepo.create(dto);
+    formation.create_by = currentUser.id;
+    formation.dte_creation = new Date();
     return this.formationRepo.save(formation);
   }
 
@@ -27,16 +32,23 @@ export class FormationService {
     return formation;
   }
 
-  async update(id: string, dto: UpdateFormationDto): Promise<Formation> {
+  async update(
+    id: string,
+    dto: UpdateFormationDto,
+    currentUser: { id: string },
+  ): Promise<Formation> {
     const formation = await this.findOne(id);
+    formation.dte_modif = new Date();
+    formation.updated_by = currentUser.id;
     Object.assign(formation, dto);
     return this.formationRepo.save(formation);
   }
 
-  async remove(id: string): Promise<void> {
+  async remove(id: string, currentUser: { id: string }): Promise<void> {
     const formation = await this.findOne(id);
     formation.statut = Statut.SUPPRIME;
     formation.dte_suppression = new Date();
+    formation.updated_by = currentUser.id;
     await this.formationRepo.save(formation);
   }
 }

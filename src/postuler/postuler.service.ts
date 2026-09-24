@@ -36,6 +36,7 @@ export class PostulerService {
 
     const postuler = this.postulerRepository.create(dto);
     postuler.create_by = currentUser.id;
+    postuler.dte_creation = new Date();
     const saved = await this.postulerRepository.save(postuler);
 
     const withRelations = await this.postulerRepository.findOne({
@@ -115,6 +116,7 @@ export class PostulerService {
     const postuler = await this.findOne(id);
     postuler.statut_candidature = dto.statut;
     postuler.updated_by = currentUser.id;
+    postuler.dte_modif = new Date();
     const saved = await this.postulerRepository.save(postuler);
 
     await this.notifyStatutChange(postuler, dto.statut);

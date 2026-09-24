@@ -4,7 +4,7 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import * as process from 'node:process';
 import { ClassSerializerInterceptor } from '@nestjs/common';
-import { configureApp } from './setup-app';
+import { configureApp } from './config/setup-app';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);

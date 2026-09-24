@@ -9,6 +9,7 @@ import { CreateOffreDto, UpdateOffreDto } from './offre.dto';
 import { ExceptionFactory } from '../common/exceptions/exception-factory';
 import { Statut } from '../common/enum/statut.enum';
 import { Skill } from '../skills/skill.entity';
+import { TypeOffre } from '../common/enum/type-offre.enum';
 
 describe('OffreService', () => {
   let service: OffreService;
@@ -57,6 +58,10 @@ describe('OffreService', () => {
         descriptions: 'Stage Full Stack',
         companyId: 'company-uuid-1',
         skillIds: ['skill-uuid-1', 'skill-uuid-2', 'skill-uuid-3'],
+        titre: 'Chef chantier',
+        dte_debut: new Date(),
+        dte_fin: new Date(),
+        type_offre: TypeOffre.ALTERNANCE,
       };
       const mockSkills = [
         { id: 'skill-uuid-1' },
@@ -85,6 +90,10 @@ describe('OffreService', () => {
         descriptions: 'Stage Full Stack',
         companyId: 'company-uuid-1',
         skillIds: ['skill-uuid-1', 'skill-uuid-2', 'skill-uuid-3'],
+        titre: 'Chef chantier',
+        dte_debut: new Date(),
+        dte_fin: new Date(),
+        type_offre: TypeOffre.ALTERNANCE,
       };
       // On ne renvoie que 2 skills sur les 3 demandés → mismatch
       const partialSkills = [

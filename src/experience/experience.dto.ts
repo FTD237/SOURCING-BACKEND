@@ -28,15 +28,6 @@ export class CreateExperienceDto {
   company_id?: string;
 
   @ApiProperty({
-    example: '1aec5bef-7a21-47d1-b7f5-c2a3e1b57023',
-    description: 'ID du RH',
-    required: false,
-  })
-  @IsUUID()
-  @IsOptional()
-  rh_id?: string;
-
-  @ApiProperty({
     example: "Développement d'une plateforme web de E-learning",
     description: "Intitulé de l'expérience",
   })

@@ -1,7 +1,15 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsString, IsNotEmpty, IsOptional } from 'class-validator';
-import { Company } from './company.entity';
-import { User } from '../user/user.entity';
+import {
+  IsEmail,
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  ValidateNested,
+} from 'class-validator';
+import { Company } from '../company.entity';
+import { User } from '../../user/user.entity';
+import { LocalisationCompanyDto } from './localisation-company.dto';
+import { Type } from 'class-transformer';
 
 export class CreateCompanyDto {
   // Informations User
@@ -24,6 +32,12 @@ export class CreateCompanyDto {
   @IsString()
   @IsNotEmpty()
   country_code: string;
+
+  @ApiProperty({ type: () => LocalisationCompanyDto, required: false })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => LocalisationCompanyDto)
+  localisation?: LocalisationCompanyDto;
 }
 
 export class UpdateCompanyDto {
@@ -41,6 +55,12 @@ export class UpdateCompanyDto {
   @IsString()
   @IsOptional()
   country_code?: string;
+
+  @ApiProperty({ type: () => LocalisationCompanyDto, required: false })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => LocalisationCompanyDto)
+  localisation?: LocalisationCompanyDto;
 }
 
 export class CreateCompanyResponseDto {

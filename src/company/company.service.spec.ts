@@ -5,7 +5,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { CompanyService } from './company.service';
 import { Company } from './company.entity';
 import { User } from '../user/user.entity';
-import { CreateCompanyDto } from './company.dto';
+import { CreateCompanyDto } from './dto/company.dto';
 import { Statut } from '../common/enum/statut.enum';
 import { AccountCreationService } from '../common/services/account-creation.service';
 

@@ -1,0 +1,7 @@
+export enum TypeOffre {
+  STAGE_PRO = 'STAGE_PRO',
+  STAGE_ACADEMIQUE = 'STAGE_ACADEMIQUE',
+  ALTERNANCE = 'ALTERNANCE',
+  CDI = 'CDI',
+  CDD = 'CDD',
+}

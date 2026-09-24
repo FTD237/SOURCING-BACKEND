@@ -20,6 +20,8 @@ describe('FormationController', () => {
   let controller: FormationController;
   let mocks: ServiceMocks<FormationService, FormationServiceMethods>;
 
+  const currentUser = { id: 'user-1' };
+
   const mockCreateDto: CreateFormationDto = {
     nom: 'Développement Full Stack',
     nbr_annee: 3,
@@ -62,9 +64,9 @@ describe('FormationController', () => {
     it('should create a formation and return it', async () => {
       mocks.create.mockResolvedValue(mockFormation as unknown as Formation);
 
-      const result = await controller.create(mockCreateDto);
+      const result = await controller.create(mockCreateDto, currentUser);
 
-      expect(mocks.create).toHaveBeenCalledWith(mockCreateDto);
+      expect(mocks.create).toHaveBeenCalledWith(mockCreateDto, currentUser);
       expect(result).toEqual(mockFormation);
     });
 
@@ -74,7 +76,9 @@ describe('FormationController', () => {
       );
       mocks.create.mockRejectedValue(error);
 
-      await expect(controller.create(mockCreateDto)).rejects.toThrow(
+      await expect(
+        controller.create(mockCreateDto, currentUser),
+      ).rejects.toThrow(
         'duplicate key value violates unique constraint "UQ_FORMATION_NOM"',
       );
     });
@@ -138,9 +142,17 @@ describe('FormationController', () => {
       const updatedFormation = { ...mockFormation, nom: 'Full Stack Avancé' };
       mocks.update.mockResolvedValue(updatedFormation as unknown as Formation);
 
-      const result = await controller.update(formationId, mockUpdateDto);
+      const result = await controller.update(
+        formationId,
+        mockUpdateDto,
+        currentUser,
+      );
 
-      expect(mocks.update).toHaveBeenCalledWith(formationId, mockUpdateDto);
+      expect(mocks.update).toHaveBeenCalledWith(
+        formationId,
+        mockUpdateDto,
+        currentUser,
+      );
       expect(result).toEqual(updatedFormation);
     });
 
@@ -151,7 +163,7 @@ describe('FormationController', () => {
       );
 
       await expect(
-        controller.update(formationId, mockUpdateDto),
+        controller.update(formationId, mockUpdateDto, currentUser),
       ).rejects.toThrow(`Formation #${formationId} introuvable`);
     });
   });
@@ -164,9 +176,9 @@ describe('FormationController', () => {
       const formationId = 'formation-1';
       mocks.remove.mockResolvedValue(undefined);
 
-      const result = await controller.remove(formationId);
+      const result = await controller.remove(formationId, currentUser);
 
-      expect(mocks.remove).toHaveBeenCalledWith(formationId);
+      expect(mocks.remove).toHaveBeenCalledWith(formationId, currentUser);
       expect(result).toBeUndefined();
     });
 
@@ -176,7 +188,7 @@ describe('FormationController', () => {
         new NotFoundException(`Formation #${formationId} introuvable`),
       );
 
-      await expect(controller.remove(formationId)).rejects.toThrow(
+      await expect(controller.remove(formationId, currentUser)).rejects.toThrow(
         `Formation #${formationId} introuvable`,
       );
     });
