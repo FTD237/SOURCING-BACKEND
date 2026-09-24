@@ -15,7 +15,7 @@ import {
   CreateEtudiantDto,
   CreateEtudiantResponseDto,
   UpdateEtudiantDto,
-} from './etudiant.dto';
+} from './dto/etudiant.dto';
 import {
   ApiBearerAuth,
   ApiBody,

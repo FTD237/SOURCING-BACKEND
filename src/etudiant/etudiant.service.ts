@@ -7,7 +7,7 @@ import {
   CreateEtudiantDto,
   CreateEtudiantResponseDto,
   UpdateEtudiantDto,
-} from './etudiant.dto';
+} from './dto/etudiant.dto';
 import { User } from '../user/user.entity';
 import { Role } from '../entity/role.entity';
 import { ExceptionFactory } from '../common/exceptions/exception-factory';
@@ -16,6 +16,7 @@ import { Statut } from '../common/enum/statut.enum';
 import { ActivationTokenService } from '../common/services/activation-token.service';
 import { MailService } from '../mail/mail.service';
 import { Roles } from '../common/enum/roles.enum';
+import { LinkCheckerService } from '../common/services/link-checker.service';
 
 @Injectable()
 export class EtudiantService {
@@ -29,6 +30,7 @@ export class EtudiantService {
     private readonly dataSource: DataSource,
     private readonly activationTokenService: ActivationTokenService,
     private readonly mailService: MailService,
+    private readonly linkCheckerService: LinkCheckerService,
   ) {}
   private readonly logger = new Logger(EtudiantService.name);
 
@@ -54,6 +56,10 @@ export class EtudiantService {
       ExceptionFactory.notFound(
         'Le rôle "etudiant" n\'existe pas. Veuillez le créer avant',
       );
+
+    if (dto.liens) {
+      await this.linkCheckerService.validateLinksOrThrow(dto.liens);
+    }
 
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
@@ -154,6 +160,9 @@ export class EtudiantService {
     });
 
     if (!etudiant) ExceptionFactory.notFound(`Etudiant`, id);
+
+    if (dto.liens)
+      await this.linkCheckerService.validateLinksOrThrow(dto.liens);
 
     const { nom, prenom, ...etudiantFields } = dto;
 
