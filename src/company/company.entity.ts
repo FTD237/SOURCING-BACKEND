@@ -49,6 +49,6 @@ export class Company extends AuditableEntity {
       nom: 'MTN cam',
     },
   })
-  @Column({ type: 'jsonb', nullable: true})
+  @Column({ type: 'jsonb', nullable: true })
   localisation: LocalisationCompany;
 }

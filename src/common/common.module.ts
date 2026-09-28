@@ -7,13 +7,15 @@ import { AccountCreationService } from './services/account-creation.service';
 import { User } from '../user/user.entity';
 import { Role } from '../entity/role.entity';
 import { MailModule } from '../mail/mail.module';
+import { LinkCheckerService } from './services/link-checker.service';
 
 @Module({
   imports: [TypeOrmModule.forFeature([User, Role]), MailModule],
   providers: [
     ActivationTokenService,
-    AccountCreationService /* autres services */,
+    AccountCreationService,
+    LinkCheckerService,
   ],
-  exports: [ActivationTokenService, AccountCreationService],
+  exports: [ActivationTokenService, AccountCreationService, LinkCheckerService],
 })
 export class CommonModule {}

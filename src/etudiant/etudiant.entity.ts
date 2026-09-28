@@ -12,6 +12,8 @@ import { User } from '../user/user.entity';
 import { AuditableEntity } from '../entity/auditable.entity';
 import { Postuler } from '../postuler/postuler.entity';
 import { EtudiantSkill } from '../etudiant-skill/etudiant-skill.entity';
+import { NiveauEtudeEnum } from '../common/enum/niveau-etude.enum';
+import type { LiensUtiles } from '../common/types/liens-utiles';
 
 @Entity('etudiant')
 @Unique('UQ_ETUDIANT_MATRICULE', ['matricule'])
@@ -56,4 +58,46 @@ export class Etudiant extends AuditableEntity {
   @ApiProperty({ type: () => [EtudiantSkill] })
   @OneToMany(() => EtudiantSkill, (etudiantSkill) => etudiantSkill.etudiant)
   etudiantSkills: EtudiantSkill[];
+
+  @ApiProperty({ example: 'je suis blablablablablablablablabla' })
+  @Column({ nullable: true })
+  bio: string;
+
+  @ApiProperty({
+    example: {
+      github: 'https://github.com/je-suis',
+      linkedin: 'https://www.linkedin.com/in/je-suis/',
+      portfolio: 'https://www.portfolio.com/je-suis',
+    },
+  })
+  @Column({ type: 'jsonb', nullable: true })
+  liens: LiensUtiles;
+
+  @ApiProperty({
+    enum: NiveauEtudeEnum,
+    enumName: 'NiveauEtudeEnum',
+    example: NiveauEtudeEnum.FOURTH_YEAR,
+  })
+  @Column({ default: NiveauEtudeEnum.FIRST_YEAR })
+  scholar_level: NiveauEtudeEnum;
+
+  @ApiProperty({ example: 'Camerounais' })
+  @Column()
+  nationality: string;
+
+  @ApiProperty({ example: 638423556 })
+  @Column({ nullable: true, type: 'int' })
+  phone_number: number;
+
+  @ApiProperty({ example: 'Génie logiciel' })
+  @Column({ nullable: true })
+  main_domain: string;
+
+  @ApiProperty({ example: ['Webstorm', 'autocad'] })
+  @Column('text', { array: true, nullable: true })
+  tools: string[];
+
+  @ApiProperty({ example: ['anglais', 'français'] })
+  @Column('text', { array: true, default: () => "'{}'" })
+  languages: string[];
 }

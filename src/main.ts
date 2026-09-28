@@ -5,6 +5,7 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import * as process from 'node:process';
 import { ClassSerializerInterceptor } from '@nestjs/common';
 import { configureApp } from './config/setup-app';
+import { getAppEnv } from './config/database.config';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -15,11 +16,12 @@ async function bootstrap() {
   // sérialisation en JSON. Sans ça, @Exclude() sur les entités n'a aucun
   // effet sur la réponse réellement envoyée au client.
   app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
+  const appEnv = getAppEnv();
 
-  if (process.env.NODE_ENV === 'production') {
+  if (appEnv !== 'development') {
     app.set('trust proxy', 1);
   }
-  if (process.env.NODE_ENV !== 'production') {
+  if (appEnv !== 'production') {
     const config = new DocumentBuilder()
       .setTitle('Sourcing API')
       .setDescription("API pour l'application sourcing")
