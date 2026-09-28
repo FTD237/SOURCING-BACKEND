@@ -18,7 +18,13 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "test:cucumber": "cucumber-js"
+    "test:cucumber": "cucumber-js",
+    "typeorm": "typeorm-ts-node-commonjs -d src/config/data-source.ts",
+    "migration:generate": "npm run typeorm -- migration:generate src/migrations/$npm_config_name",
+    "migration:run": "npm run typeorm -- migration:run",
+    "migration:revert": "npm run typeorm -- migration:revert",
+    "migration:show": "typeorm-ts-node-commonjs migration:show -d src/config/data-source.ts",
+    "migration:run:prod": "typeorm -d dist/config/data-source.js migration:run"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1095.0",
@@ -44,7 +50,7 @@
     "handlebars": "^4.7.9",
     "helmet": "^8.3.0",
     "multer": "^2.2.0",
-    "nodemailer": "^9.0.3",
+    "nodemailer": "^10.0.10",
     "package.json": "^2.0.1",
     "pg": "^8.21.0",
     "reflect-metadata": "^0.2.2",
