@@ -98,7 +98,11 @@ class Company extends AuditableEntity {
     enumName: 'RecruitmentStatusEnum',
     example: RecruitmentStatusEnum.CLOSED,
   })
-  @Column()
+  @Column({
+    enum: RecruitmentStatusEnum,
+    enumName: 'RecruitmentStatusEnum',
+    type: 'enum',
+  })
   recruitment_status: RecruitmentStatusEnum;
 
   @ApiProperty({
@@ -106,7 +110,11 @@ class Company extends AuditableEntity {
     enumName: 'NiveauEtudeEnum',
     example: NiveauEtudeEnum.FIRST_YEAR,
   })
-  @Column()
+  @Column({
+    enum: NiveauEtudeEnum,
+    enumName: 'NiveauEtudeEnum',
+    type: 'enum',
+  })
   minStudentLevel: NiveauEtudeEnum;
 }
 
