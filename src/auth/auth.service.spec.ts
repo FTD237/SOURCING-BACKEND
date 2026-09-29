@@ -7,7 +7,7 @@ import * as bcrypt from 'bcrypt';
 import { AuthService } from './auth.service';
 import { User } from '../user/user.entity';
 import { Etudiant } from '../etudiant/etudiant.entity';
-import { Company } from '../company/company.entity';
+import Company from '../company/company.entity';
 import { Role } from '../entity/role.entity';
 import { MailService } from '../mail/mail.service';
 import { Roles as RolesEnum } from '../common/enum/roles.enum';

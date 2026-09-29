@@ -8,7 +8,7 @@ import {
 import { ApiProperty } from '@nestjs/swagger';
 import { Etudiant } from '../etudiant/etudiant.entity';
 import { AuditableEntity } from '../entity/auditable.entity';
-import { Company } from '../company/company.entity';
+import Company from '../company/company.entity';
 
 @Entity('experience')
 export class Experience extends AuditableEntity {

@@ -3,7 +3,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Company } from './company.entity';
+import Company from './company.entity';
 import { ExceptionFactory } from '../common/exceptions/exception-factory';
 import {
   CreateCompanyDto,
@@ -50,6 +50,7 @@ export class CompanyService {
             statut: Statut.ACTIF,
             create_by: currentUser.id,
             dte_creation: new Date(),
+            isPartner: false,
           });
           return manager.save(company);
         },

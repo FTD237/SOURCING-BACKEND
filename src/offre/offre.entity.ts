@@ -12,7 +12,7 @@ import {
 import { Postuler } from '../postuler/postuler.entity';
 import { AuditableEntity } from '../entity/auditable.entity';
 import { ApiProperty } from '@nestjs/swagger';
-import { Company } from '../company/company.entity';
+import Company from '../company/company.entity';
 import { Skill } from '../skills/skill.entity';
 import { TypeOffre } from '../common/enum/type-offre.enum';
 
