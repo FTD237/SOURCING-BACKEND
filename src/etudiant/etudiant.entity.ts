@@ -78,7 +78,12 @@ export class Etudiant extends AuditableEntity {
     enumName: 'NiveauEtudeEnum',
     example: NiveauEtudeEnum.FOURTH_YEAR,
   })
-  @Column({ default: NiveauEtudeEnum.FIRST_YEAR })
+  @Column({
+    enum: NiveauEtudeEnum,
+    enumName: 'NiveauEtudeEnum',
+    type: 'enum',
+    default: NiveauEtudeEnum.FIRST_YEAR,
+  })
   scholar_level: NiveauEtudeEnum;
 
   @ApiProperty({ example: 'Camerounais' })
