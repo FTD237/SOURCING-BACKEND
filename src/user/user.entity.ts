@@ -14,7 +14,7 @@ import { ApiHideProperty, ApiProperty } from '@nestjs/swagger';
 import { Exclude } from 'class-transformer';
 import { Role } from '../entity/role.entity';
 import { Etudiant } from '../etudiant/etudiant.entity';
-import { Company } from '../company/company.entity';
+import Company from '../company/company.entity';
 import { AuditableEntity } from '../entity/auditable.entity';
 
 @Entity('user')
