@@ -3,11 +3,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { CompanyService } from './company.service';
-import { Company } from './company.entity';
+import Company from './company.entity';
 import { User } from '../user/user.entity';
 import { CreateCompanyDto } from './dto/company.dto';
 import { Statut } from '../common/enum/statut.enum';
 import { AccountCreationService } from '../common/services/account-creation.service';
+import { RecruitmentStatusEnum } from '../common/enum/recruitment-status.enum';
 
 interface MockCompanyRepository {
   find: jest.Mock;
@@ -35,6 +36,18 @@ describe('CompanyService', () => {
     prenom: 'Jean',
     email: 'jean@techcorp.com',
     country_code: 'FR',
+    company_name: 'techCorp',
+    company_description:
+      'techcorp machin blablabla bref ça ser seulement au test de toute façon personne ne lis ça',
+    contact_person: 'Sergine',
+    contact_phone: 677789090,
+    recruitment_status: RecruitmentStatusEnum.RECRUITING,
+    localisation: {
+      latitude: 3.89098,
+      longitude: 4.2345,
+      nom: 'techCorp',
+    },
+    isPartner: false,
   };
 
   const mockRole = { id: 'role-1', nom: 'rh' };

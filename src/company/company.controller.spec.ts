@@ -9,8 +9,9 @@ import {
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { RolesGuard } from '../guards/roles.guard';
 import { User } from '../user/user.entity';
-import { Company } from './company.entity';
+import Company from './company.entity';
 import { Statut } from '../common/enum/statut.enum';
+import { RecruitmentStatusEnum } from '../common/enum/recruitment-status.enum';
 
 describe('CompanyController', () => {
   let controller: CompanyController;
@@ -26,6 +27,18 @@ describe('CompanyController', () => {
     prenom: 'Jean',
     email: 'jean@techcorp.com',
     country_code: 'FR',
+    company_name: 'techCorp',
+    company_description:
+      'techcorp machin blablabla bref ça ser seulement au test de toute façon personne ne lis ça',
+    contact_person: 'Sergine',
+    contact_phone: 677789090,
+    recruitment_status: RecruitmentStatusEnum.RECRUITING,
+    localisation: {
+      latitude: 3.89098,
+      longitude: 4.2345,
+      nom: 'techCorp',
+    },
+    isPartner: false,
   };
 
   const mockUpdateDto: UpdateCompanyDto = {
