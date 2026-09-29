@@ -28,7 +28,7 @@ import {
   UpdateCompanyDto,
 } from './dto/company.dto';
 import { Roles } from '../decorators/roles.decorator';
-import { Company } from './company.entity';
+import Company from './company.entity';
 import {
   ApiCrudErrorResponses,
   ApiUuidParam,

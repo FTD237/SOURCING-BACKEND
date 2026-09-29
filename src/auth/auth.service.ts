@@ -9,7 +9,7 @@ import { User } from '../user/user.entity';
 import { ExceptionFactory } from '../common/exceptions/exception-factory';
 import { MailService } from '../mail/mail.service';
 import { Etudiant } from '../etudiant/etudiant.entity';
-import { Company } from '../company/company.entity';
+import Company from '../company/company.entity';
 import { Roles as RolesEnum } from '../common/enum/roles.enum';
 
 const RESET_TOKEN_TTL_MS = 60 * 60 * 1000; // 1h
