@@ -7,7 +7,7 @@ import { JwtStrategy } from './jwt-strategy';
 import { User } from '../user/user.entity';
 import { MailModule } from '../mail/mail.module';
 import { Etudiant } from '../etudiant/etudiant.entity';
-import { Company } from '../company/company.entity';
+import Company from '../company/company.entity';
 
 @Module({
   imports: [
