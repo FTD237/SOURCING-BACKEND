@@ -14,6 +14,7 @@ import { Postuler } from '../postuler/postuler.entity';
 import { EtudiantSkill } from '../etudiant-skill/etudiant-skill.entity';
 import { NiveauEtudeEnum } from '../common/enum/niveau-etude.enum';
 import type { LiensUtiles } from '../common/types/liens-utiles';
+import { FileEntity } from '../file/file.entity';
 
 @Entity('etudiant')
 @Unique('UQ_ETUDIANT_MATRICULE', ['matricule'])
@@ -105,4 +106,13 @@ export class Etudiant extends AuditableEntity {
   @ApiProperty({ example: ['anglais', 'français'] })
   @Column('text', { array: true, default: () => "'{}'" })
   languages: string[];
+
+  @ApiProperty({ example: '1aec5bef-7a21-47d1-b7f5-c2a3e1b57023' })
+  @Column({ nullable: true, type: 'uuid' })
+  avatar_id: string | null;
+
+  @ApiProperty({ type: () => FileEntity })
+  @OneToOne(() => FileEntity, { nullable: true })
+  @JoinColumn({ name: 'avatar_id' })
+  avatar: FileEntity | null;
 }

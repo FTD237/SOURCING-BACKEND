@@ -50,6 +50,8 @@ class Company extends AuditableEntity {
       latitude: 3.848032,
       longitude: 11.502075,
       nom: 'MTN cam',
+      city: 'Douala',
+      address: 'Douala 34 rue de la joie',
     },
   })
   @Column({ type: 'jsonb', nullable: true })

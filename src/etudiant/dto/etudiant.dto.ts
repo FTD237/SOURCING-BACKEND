@@ -11,6 +11,7 @@ import {
   Max,
   IsEnum,
   ValidateNested,
+  IsUUID,
 } from 'class-validator';
 import { User } from '../../user/user.entity';
 import { Etudiant } from '../etudiant.entity';
@@ -74,6 +75,11 @@ export class CreateEtudiantDto {
   @ValidateNested()
   @Type(() => LiensUtilesDto)
   liens?: LiensUtiles;
+
+  @ApiProperty()
+  @IsUUID()
+  @IsOptional()
+  avatar_id?: string;
 }
 
 export class UpdateEtudiantDto {
@@ -133,6 +139,11 @@ export class UpdateEtudiantDto {
   @IsOptional()
   @IsString()
   bio?: string;
+
+  @ApiProperty()
+  @IsUUID()
+  @IsOptional()
+  avatar_id?: string;
 }
 
 export class CreateEtudiantResponseDto {

@@ -14,4 +14,12 @@ export class LocalisationCompanyDto {
   @ApiProperty({ example: 'MTN cam' })
   @IsString()
   nom: string;
+
+  @ApiProperty({ example: 'Akwa Dubai' })
+  @IsString()
+  city: string;
+
+  @ApiProperty()
+  @IsString()
+  address: string;
 }
