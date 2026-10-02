@@ -15,6 +15,11 @@ import { ApiProperty } from '@nestjs/swagger';
 import Company from '../company/company.entity';
 import { Skill } from '../skills/skill.entity';
 import { TypeOffre } from '../common/enum/type-offre.enum';
+import { NiveauEtudeEnum } from '../common/enum/niveau-etude.enum';
+import {
+  monthsToSeconds,
+  secondsToMonths,
+} from '../common/utils/duration.util';
 
 @Entity('offre')
 export class Offre extends AuditableEntity {
@@ -73,4 +78,40 @@ export class Offre extends AuditableEntity {
   @ApiProperty({ example: 'Stage - chef projet' })
   @Column()
   titre: string;
+
+  @ApiProperty({ example: ['cv', 'lettre_motivation', 'certificat'] })
+  @Column('text', { array: true })
+  required_documents: string[];
+
+  @ApiProperty({ example: ['Génie logiciel', 'Data', 'Marketing'] })
+  @Column('text', { array: true })
+  domain: string[];
+
+  @ApiProperty({
+    enum: NiveauEtudeEnum,
+    enumName: 'NiveauEtudeEnum',
+    example: NiveauEtudeEnum.FIRST_YEAR,
+  })
+  @Column({ enum: NiveauEtudeEnum, enumName: 'NiveauEtudeEnum', type: 'enum' })
+  level: NiveauEtudeEnum;
+
+  @ApiProperty({ example: 6, description: 'Durée en mois' })
+  @Column({
+    type: 'bigint',
+    transformer: {
+      to: (months: number | null | undefined) =>
+        months == null ? months : monthsToSeconds(months),
+      from: (value: string | null) =>
+        value == null ? null : secondsToMonths(value),
+    },
+  })
+  duration: number;
+
+  @ApiProperty({ example: 'Douala' })
+  @Column()
+  offre_ville: string;
+
+  @ApiProperty({ example: 'Siége MTN Dubai' })
+  @Column()
+  offre_address: string;
 }

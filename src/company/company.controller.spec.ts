@@ -37,6 +37,8 @@ describe('CompanyController', () => {
       latitude: 3.89098,
       longitude: 4.2345,
       nom: 'techCorp',
+      city: 'Douala',
+      address: 'Douala rue de la joie',
     },
     isPartner: false,
   };
