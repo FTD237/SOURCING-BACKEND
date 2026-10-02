@@ -12,26 +12,6 @@ export class CompanyFilesRelations1790693402115 implements MigrationInterface {
       // <- remplacez par les valeurs réelles de RecruitmentStatusEnum
       `CREATE TYPE "public"."RecruitmentStatusEnum" AS ENUM('PAUSED', 'CLOSED', 'RECRUITING')`,
     );
-
-    // --- etudiant
-    await queryRunner.query(
-      `ALTER TABLE "etudiant" ADD "phone_number" integer`,
-    );
-
-    // scholar_level : conversion sur place, les valeurs sont conservées
-    await queryRunner.query(
-      `ALTER TABLE "etudiant" ALTER COLUMN "scholar_level" DROP DEFAULT`,
-    );
-    await queryRunner.query(
-      `ALTER TABLE "etudiant" ALTER COLUMN "scholar_level"
-       TYPE "public"."NiveauEtudeEnum"
-       USING "scholar_level"::text::"public"."NiveauEtudeEnum"`,
-    );
-    await queryRunner.query(
-      `ALTER TABLE "etudiant" ALTER COLUMN "scholar_level" SET DEFAULT 'FIRST_YEAR'`,
-    );
-    await queryRunner.query(`DROP TYPE "public"."niveau_etude_enum"`);
-
     // --- company : colonnes NOT NULL ajoutées en 3 temps
     await queryRunner.query(
       `ALTER TABLE "company" ADD "company_name" character varying`,
