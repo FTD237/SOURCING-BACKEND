@@ -4,14 +4,14 @@ export class CompanyFilesRelations1790693402115 implements MigrationInterface {
   name = 'CompanyFilesRelations1790693402115';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
-    // --- Types enum (NiveauEtudeEnum sert à etudiant ET company)
+    // --- Types enum (NiveauEtudeEnum sert à etudiant, company et offre)
     await queryRunner.query(
       `CREATE TYPE "public"."NiveauEtudeEnum" AS ENUM('FIRST_YEAR', 'SECOND_YEAR', 'THIRD_YEAR', 'FOURTH_YEAR', 'FIFTH_YEAR', 'SIX_YEAR')`,
     );
     await queryRunner.query(
-      // <- remplacez par les valeurs réelles de RecruitmentStatusEnum
       `CREATE TYPE "public"."RecruitmentStatusEnum" AS ENUM('PAUSED', 'CLOSED', 'RECRUITING')`,
     );
+
     // --- company : colonnes NOT NULL ajoutées en 3 temps
     await queryRunner.query(
       `ALTER TABLE "company" ADD "company_name" character varying`,
@@ -35,15 +35,15 @@ export class CompanyFilesRelations1790693402115 implements MigrationInterface {
       `ALTER TABLE "company" ADD "isPartner" boolean NOT NULL DEFAULT false`,
     );
 
-    // valeurs de remplissage pour les lignes existantes (à adapter)
+    // valeurs de remplissage pour les lignes existantes
     await queryRunner.query(
       `UPDATE "company" SET
-         "company_name" = 'Entreprise ' || LEFT("id"::text, 8),
-         "company_description" = '',
-         "contact_person" = '',
-         "contact_phone" = 0,
-         "recruitment_status" = 'CLOSED',
-         "minStudentLevel" = 'FIRST_YEAR'`,
+                            "company_name" = 'Entreprise ' || LEFT("id"::text, 8),
+                            "company_description" = '',
+                            "contact_person" = '',
+                            "contact_phone" = 0,
+                            "recruitment_status" = 'CLOSED',
+                            "minStudentLevel" = 'FIRST_YEAR'`,
     );
 
     await queryRunner.query(
@@ -83,7 +83,6 @@ export class CompanyFilesRelations1790693402115 implements MigrationInterface {
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    // --- company
     await queryRunner.query(
       `ALTER TABLE "company" DROP CONSTRAINT "FK_8103c24ed6e5e64ce093006b6ca"`,
     );
@@ -116,25 +115,6 @@ export class CompanyFilesRelations1790693402115 implements MigrationInterface {
     );
     await queryRunner.query(`ALTER TABLE "company" DROP COLUMN "company_name"`);
     await queryRunner.query(`DROP TYPE "public"."RecruitmentStatusEnum"`);
-
-    // --- etudiant : retour au type d'origine, valeurs conservées
-    await queryRunner.query(
-      `CREATE TYPE "public"."niveau_etude_enum" AS ENUM('FIRST_YEAR', 'SECOND_YEAR', 'THIRD_YEAR', 'FOURTH_YEAR', 'FIFTH_YEAR', 'SIX_YEAR')`,
-    );
-    await queryRunner.query(
-      `ALTER TABLE "etudiant" ALTER COLUMN "scholar_level" DROP DEFAULT`,
-    );
-    await queryRunner.query(
-      `ALTER TABLE "etudiant" ALTER COLUMN "scholar_level"
-        TYPE "public"."niveau_etude_enum"
-        USING "scholar_level"::text::"public"."niveau_etude_enum"`,
-    );
-    await queryRunner.query(
-      `ALTER TABLE "etudiant" ALTER COLUMN "scholar_level" SET DEFAULT 'FIRST_YEAR'`,
-    );
     await queryRunner.query(`DROP TYPE "public"."NiveauEtudeEnum"`);
-    await queryRunner.query(
-      `ALTER TABLE "etudiant" DROP COLUMN "phone_number"`,
-    );
   }
 }
