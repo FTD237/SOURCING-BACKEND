@@ -5,6 +5,8 @@ import { OffreController } from './offre.controller';
 import { OffreService } from './offre.service';
 import { Offre } from './offre.entity';
 import { CreateOffreDto, UpdateOffreDto } from './offre.dto';
+import { NiveauEtudeEnum } from '../common/enum/niveau-etude.enum';
+import { TypeOffre } from '../common/enum/type-offre.enum';
 
 describe('OffreController', () => {
   let controller: OffreController;
@@ -45,6 +47,16 @@ describe('OffreController', () => {
       descriptions: 'Stage Full Stack',
       companyId: 'company-uuid-1',
       skillIds: ['skill-uuid-1', 'skill-uuid-2'],
+      required_documents: ['CV', 'Lettre de motivation'],
+      domain: ['Developpement', 'web', 'devops'],
+      level: NiveauEtudeEnum.FOURTH_YEAR,
+      duration: 1000000000,
+      offre_ville: 'Douala',
+      offre_address: 'MTN AKWA DUBAI',
+      type_offre: TypeOffre.ALTERNANCE,
+      titre: 'Stage',
+      dte_debut: new Date(),
+      dte_fin: new Date(),
     };
     service.create.mockResolvedValue(mockOffre);
 

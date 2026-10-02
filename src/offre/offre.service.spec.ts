@@ -10,6 +10,7 @@ import { ExceptionFactory } from '../common/exceptions/exception-factory';
 import { Statut } from '../common/enum/statut.enum';
 import { Skill } from '../skills/skill.entity';
 import { TypeOffre } from '../common/enum/type-offre.enum';
+import { NiveauEtudeEnum } from '../common/enum/niveau-etude.enum';
 
 describe('OffreService', () => {
   let service: OffreService;
@@ -62,6 +63,12 @@ describe('OffreService', () => {
         dte_debut: new Date(),
         dte_fin: new Date(),
         type_offre: TypeOffre.ALTERNANCE,
+        required_documents: ['CV', 'Lettre de motivation'],
+        domain: ['Developpement', 'web', 'devops'],
+        level: NiveauEtudeEnum.FOURTH_YEAR,
+        duration: 1000000000,
+        offre_ville: 'Douala',
+        offre_address: 'MTN AKWA DUBAI',
       };
       const mockSkills = [
         { id: 'skill-uuid-1' },
@@ -94,6 +101,12 @@ describe('OffreService', () => {
         dte_debut: new Date(),
         dte_fin: new Date(),
         type_offre: TypeOffre.ALTERNANCE,
+        required_documents: ['CV', 'Lettre de motivation'],
+        domain: ['Developpement', 'web', 'devops'],
+        level: NiveauEtudeEnum.FOURTH_YEAR,
+        duration: 1000000000,
+        offre_ville: 'Douala',
+        offre_address: 'MTN AKWA DUBAI',
       };
       // On ne renvoie que 2 skills sur les 3 demandés → mismatch
       const partialSkills = [

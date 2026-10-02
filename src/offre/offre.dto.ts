@@ -4,12 +4,17 @@ import {
   IsArray,
   IsDate,
   IsEnum,
+  IsInt,
   IsNotEmpty,
   IsOptional,
   IsString,
   IsUUID,
+  Min,
 } from 'class-validator';
 import { TypeOffre } from '../common/enum/type-offre.enum';
+import { NiveauEtudeEnum } from '../common/enum/niveau-etude.enum';
+import { Transform } from 'class-transformer';
+import { parseDurationToMonths } from '../common/utils/duration.util';
 
 export class CreateOffreDto {
   @ApiPropertyOptional({
@@ -59,6 +64,45 @@ export class CreateOffreDto {
   @IsDate()
   @IsNotEmpty()
   dte_fin: Date;
+
+  @ApiProperty()
+  @IsArray()
+  @IsString()
+  @IsNotEmpty()
+  required_documents: string[];
+
+  @ApiProperty()
+  @IsArray()
+  @IsString()
+  @IsNotEmpty()
+  domain: string[];
+
+  @ApiProperty()
+  @IsEnum(NiveauEtudeEnum)
+  @IsNotEmpty()
+  level: NiveauEtudeEnum;
+
+  @ApiProperty({
+    type: String,
+    example: '6 mois',
+    description: 'Durée en mois : "6 mois", "1 an" ou simplement 6',
+  })
+  @Transform(({ value }) => parseDurationToMonths(value))
+  @IsInt({
+    message: 'La durée doit être un nombre entier de mois (ex. "6 mois")',
+  })
+  @Min(1, { message: 'La durée minimale est de 1 mois' })
+  duration: number;
+
+  @ApiProperty()
+  @IsNotEmpty()
+  @IsString()
+  offre_ville: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  offre_address: string;
 }
 
 export class UpdateOffreDto extends PartialType(CreateOffreDto) {}
