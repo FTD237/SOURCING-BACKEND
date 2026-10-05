@@ -18,6 +18,7 @@ import { PostulerModule } from './postuler/postuler.module';
 import { EtudiantSkillModule } from './etudiant-skill/etudiant-skill.module';
 import { NotificationModule } from './notifications/notification.module';
 import { buildDatabaseOptions, getAppEnv } from './config/database.config';
+import { EvaluationModule } from './evaluation/evaluation.module';
 
 @Module({
   imports: [
@@ -69,6 +70,7 @@ import { buildDatabaseOptions, getAppEnv } from './config/database.config';
     PostulerModule,
     EtudiantSkillModule,
     NotificationModule,
+    EvaluationModule
   ],
 })
 export class AppModule {}
