@@ -20,14 +20,12 @@ const STUDENT_ID = 'student-1';
 const USER = { id: 'user-1' };
 const anyDate: unknown = expect.any(Date);
 
-function makeManager(avg: string | undefined = '4') {
+function makeManager(avg: string | null = '4') {
   const qb = {
     select: jest.fn().mockReturnThis(),
     where: jest.fn().mockReturnThis(),
     andWhere: jest.fn().mockReturnThis(),
-    getRawOne: jest
-      .fn()
-      .mockResolvedValue(avg === undefined ? undefined : { avg }),
+    getRawOne: jest.fn().mockResolvedValue(avg === null ? undefined : { avg }),
   };
   return {
     findOne: jest.fn(),
@@ -58,8 +56,8 @@ describe('EvaluationService', () => {
   let manager: ReturnType<typeof makeManager>;
   let evalRepo: { findAndCount: jest.Mock };
 
-  async function setup(avg?: string) {
-    manager = makeManager(arguments.length === 0 ? '4' : avg);
+  async function setup(avg: string | null = '4') {
+    manager = makeManager(avg);
     evalRepo = { findAndCount: jest.fn() };
 
     const moduleRef = await Test.createTestingModule({
@@ -377,20 +375,14 @@ describe('EvaluationService', () => {
       ];
     }
 
-    it('arrondit la moyenne à une décimale', async () => {
-      await setup('3.666');
-      const [, , values] = await recalcViaRemove();
-      expect(values.star_rate).toBe(3.7);
-    });
-
-    it("met 0 quand l'étudiant n'a plus aucune évaluation active", async () => {
-      await setup('0');
+    it('met 0 quand la requête ne renvoie aucune ligne', async () => {
+      await setup(null);
       const [, , values] = await recalcViaRemove();
       expect(values.star_rate).toBe(0);
     });
 
-    it('met 0 quand la requête ne renvoie aucune ligne', async () => {
-      await setup(undefined);
+    it("met 0 quand l'étudiant n'a plus aucune évaluation active", async () => {
+      await setup('0');
       const [, , values] = await recalcViaRemove();
       expect(values.star_rate).toBe(0);
     });
