@@ -2,7 +2,7 @@
 import { Given, When, Then, Before } from '@cucumber/cucumber';
 import { expect } from 'chai';
 import * as sinon from 'sinon';
-import { EtudiantService } from '../../../src/etudiant/etudiant.service';
+import EtudiantService from '../../../src/etudiant/etudiant.service';
 import { Logger } from '@nestjs/common';
 
 interface World {

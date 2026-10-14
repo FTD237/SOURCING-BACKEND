@@ -51,6 +51,7 @@ export class CreateOffreDto {
   @IsEnum(TypeOffre)
   type_offre: TypeOffre;
 
+  @ApiProperty({ example: 'Offre' })
   @IsNotEmpty()
   @IsString()
   titre: string;
@@ -67,13 +68,11 @@ export class CreateOffreDto {
 
   @ApiProperty()
   @IsArray()
-  @IsString()
   @IsNotEmpty()
   required_documents: string[];
 
   @ApiProperty()
   @IsArray()
-  @IsString()
   @IsNotEmpty()
   domain: string[];
 

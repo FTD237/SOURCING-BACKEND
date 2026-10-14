@@ -5,10 +5,11 @@ import {
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Etudiant } from '../etudiant/etudiant.entity';
 import { AuditableEntity } from '../entity/auditable.entity';
 import Company from '../company/company.entity';
+import { FileEntity } from '../file/file.entity';
 
 @Entity('experience')
 export class Experience extends AuditableEntity {
@@ -56,4 +57,15 @@ export class Experience extends AuditableEntity {
   @ApiProperty({ example: '2026-04-17' })
   @Column({ type: 'date' })
   date_fin: Date;
+
+  @ApiProperty({
+    type: [String],
+    format: 'uuid',
+    example: ['1aec5bef-7a21-47d1-b7f5-c2a3e1b57023'],
+  })
+  @Column('uuid', { array: true, default: () => "'{}'" }) // même convention que `languages`
+  media_ids: string[];
+
+  @ApiPropertyOptional({ type: () => [FileEntity] })
+  media?: FileEntity[];
 }

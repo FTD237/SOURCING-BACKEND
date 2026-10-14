@@ -1,5 +1,5 @@
 // src/etudiant/etudiant.dto.ts
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsEmail,
   IsString,
@@ -19,6 +19,7 @@ import { Statut } from '../../common/enum/statut.enum';
 import type { LiensUtiles } from '../../common/types/liens-utiles';
 import { LiensUtilesDto } from './liens-utiles.dto';
 import { Type } from 'class-transformer';
+import { UpsertJobseekerDto } from '../../jobseeker/dto/upsert-jobseeker.dto';
 
 export class CreateEtudiantDto {
   // Informations User
@@ -80,6 +81,12 @@ export class CreateEtudiantDto {
   @IsUUID()
   @IsOptional()
   avatar_id?: string;
+
+  @ApiPropertyOptional({ type: () => UpsertJobseekerDto })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => UpsertJobseekerDto)
+  jobseeker?: UpsertJobseekerDto;
 }
 
 export class UpdateEtudiantDto {
@@ -144,6 +151,12 @@ export class UpdateEtudiantDto {
   @IsUUID()
   @IsOptional()
   avatar_id?: string;
+
+  @ApiPropertyOptional({ type: () => UpsertJobseekerDto })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => UpsertJobseekerDto)
+  jobseeker?: UpsertJobseekerDto;
 }
 
 export class CreateEtudiantResponseDto {

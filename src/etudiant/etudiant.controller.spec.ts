@@ -2,7 +2,7 @@
 
 import { TestingModule } from '@nestjs/testing';
 import { EtudiantController } from './etudiant.controller';
-import { EtudiantService } from './etudiant.service';
+import EtudiantService from './etudiant.service';
 import {
   CreateEtudiantDto,
   CreateEtudiantResponseDto,

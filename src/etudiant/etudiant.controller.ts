@@ -6,11 +6,11 @@ import {
   HttpCode,
   HttpStatus,
   Param,
+  Patch,
   Post,
-  Put,
   UseGuards,
 } from '@nestjs/common';
-import { EtudiantService } from './etudiant.service';
+import EtudiantService from './etudiant.service';
 import {
   CreateEtudiantDto,
   CreateEtudiantResponseDto,
@@ -146,7 +146,7 @@ export class EtudiantController {
    * @throws NotFoundException si aucun étudiant ne correspond à `id` (404).
    * @throws BadRequestException si les données fournies sont invalides (400).
    */
-  @Put(':id')
+  @Patch(':id')
   @Roles(
     RolesEnum.ETUDIANT,
     RolesEnum.ADMIN,

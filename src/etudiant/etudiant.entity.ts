@@ -15,6 +15,7 @@ import { EtudiantSkill } from '../etudiant-skill/etudiant-skill.entity';
 import { NiveauEtudeEnum } from '../common/enum/niveau-etude.enum';
 import type { LiensUtiles } from '../common/types/liens-utiles';
 import { FileEntity } from '../file/file.entity';
+import { Jobseeker } from '../jobseeker/jobseeker.entity';
 
 @Entity('etudiant')
 @Unique('UQ_ETUDIANT_MATRICULE', ['matricule'])
@@ -115,4 +116,8 @@ export class Etudiant extends AuditableEntity {
   @OneToOne(() => FileEntity, { nullable: true })
   @JoinColumn({ name: 'avatar_id' })
   avatar: FileEntity | null;
+
+  @ApiProperty({ type: () => Jobseeker })
+  @OneToOne(() => Jobseeker, (jobseeker) => jobseeker.etudiant)
+  jobseeker: Jobseeker;
 }
