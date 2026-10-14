@@ -60,7 +60,7 @@ export class OffreController {
   }
 
   @Get()
-  @Roles(RolesEnum.RH, RolesEnum.MANAGER, RolesEnum.ETUDIANT)
+  @Roles(RolesEnum.RH, RolesEnum.MANAGER, RolesEnum.ETUDIANT, RolesEnum.ADMIN)
   @ApiOperation({
     summary: 'Lister toutes les offres',
     description: 'Retourne la liste de toutes les offres actives.',
@@ -75,7 +75,7 @@ export class OffreController {
   }
 
   @Get(':id')
-  @Roles(RolesEnum.RH, RolesEnum.MANAGER, RolesEnum.ETUDIANT)
+  @Roles(RolesEnum.RH, RolesEnum.MANAGER, RolesEnum.ETUDIANT, RolesEnum.ADMIN)
   @ApiOperation({ summary: 'Récupérer une offre par son id' })
   @ApiParam({ name: 'id', description: "UUID de l'offre" })
   @ApiResponse({
