@@ -8,7 +8,6 @@ import {
   Param,
   Patch,
   Post,
-  Put,
   UseGuards,
 } from '@nestjs/common';
 import EtudiantService from './etudiant.service';
