@@ -1,5 +1,7 @@
 // ─── experience.dto.ts ───────────────────────────────────────────────────────
 import {
+  ArrayUnique,
+  IsArray,
   IsDateString,
   IsNotEmpty,
   IsOptional,
@@ -7,7 +9,7 @@ import {
   IsUUID,
 } from 'class-validator';
 import { PartialType } from '@nestjs/mapped-types';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Statut } from '../common/enum/statut.enum';
 
 export class CreateExperienceDto {
@@ -70,6 +72,17 @@ export class CreateExperienceDto {
   @IsDateString()
   @IsOptional()
   date_fin?: string;
+
+  @ApiPropertyOptional({
+    type: [String],
+    format: 'uuid',
+    example: ['1aec5bef-7a21-47d1-b7f5-c2a3e1b57023'],
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayUnique()
+  @IsUUID('all', { each: true })
+  media_ids?: string[];
 }
 
 export class UpdateExperienceDto extends PartialType(CreateExperienceDto) {
