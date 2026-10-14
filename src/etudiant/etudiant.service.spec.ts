@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
-import { EtudiantService } from './etudiant.service';
+import EtudiantService from './etudiant.service';
 import { Etudiant } from './etudiant.entity';
 import { User } from '../user/user.entity';
 import { Role } from '../entity/role.entity';
@@ -13,6 +13,7 @@ import { ActivationTokenService } from '../common/services/activation-token.serv
 import { MailService } from '../mail/mail.service';
 import { NotFoundException } from '@nestjs/common';
 import { LinkCheckerService } from '../common/services/link-checker.service';
+import { JobseekerService } from '../jobseeker/jobseeker.service';
 
 describe('EtudiantService', () => {
   let service: EtudiantService;
@@ -51,8 +52,16 @@ describe('EtudiantService', () => {
     manager: mockQueryRunnerManager,
   };
 
+  // Manager passé au callback de dataSource.transaction (utilisé par update)
+  const mockManager = {
+    update: jest.fn(),
+  };
+
   const mockDataSource = {
     createQueryRunner: jest.fn(() => mockQueryRunner),
+    transaction: jest.fn((cb: (manager: unknown) => unknown) =>
+      cb(mockManager),
+    ),
   };
 
   const mockActivationTokenService = {
@@ -62,6 +71,11 @@ describe('EtudiantService', () => {
 
   const mockMailService = {
     sendAccountActivationMail: jest.fn(),
+  };
+
+  const mockJobseekerService = {
+    activerDans: jest.fn(),
+    desactiverDans: jest.fn(),
   };
 
   const mockUser = buildUser();
@@ -91,7 +105,19 @@ describe('EtudiantService', () => {
     );
   }
 
+  /** Prépare un étudiant renvoyé par findOne (avant et après la mise à jour). */
+  function givenEtudiant(overrides: Partial<Etudiant> = {}) {
+    const etudiant = buildEtudiant(overrides);
+    mockFindOne.mockResolvedValue(etudiant);
+    return etudiant;
+  }
+
   beforeEach(async () => {
+    // Évite qu'une valeur "once" non consommée dans un test fuite dans le suivant
+    mockFindOne.mockReset();
+    mockJobseekerService.activerDans.mockReset();
+    mockJobseekerService.desactiverDans.mockReset();
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         EtudiantService,
@@ -108,6 +134,7 @@ describe('EtudiantService', () => {
         },
         { provide: MailService, useValue: mockMailService },
         { provide: LinkCheckerService, useValue: mockLinkCheckerService },
+        { provide: JobseekerService, useValue: mockJobseekerService },
       ],
     }).compile();
 
@@ -244,6 +271,75 @@ describe('EtudiantService', () => {
         expect(mockQueryRunner.connect).not.toHaveBeenCalled();
       });
     });
+
+    describe('create — recherche d’emploi', () => {
+      function setupCreationWithSavedEtudiant(
+        etudiant: ReturnType<typeof buildEtudiant>,
+      ) {
+        setupSuccessfulCreationMocks();
+        mockMailService.sendAccountActivationMail.mockResolvedValue(undefined);
+        // on remplace l'étudiant renvoyé par le save de la transaction
+        mockQueryRunnerManager.save.mockReset();
+        mockQueryRunnerManager.save
+          .mockResolvedValueOnce(mockUser)
+          .mockResolvedValueOnce(etudiant);
+      }
+
+      it('active la recherche d’emploi dans la même transaction quand is_job_seeker est true', async () => {
+        const enRecherche = buildEtudiant({ is_job_seeker: true });
+        setupCreationWithSavedEtudiant(enRecherche);
+
+        await service.create({ ...dto, is_job_seeker: true }, currentUser);
+
+        expect(mockJobseekerService.activerDans).toHaveBeenCalledWith(
+          mockQueryRunnerManager,
+          enRecherche.id,
+          {},
+          currentUser,
+        );
+        expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
+      });
+
+      it('transmet les détails jobseeker du dto', async () => {
+        const enRecherche = buildEtudiant({ is_job_seeker: true });
+        setupCreationWithSavedEtudiant(enRecherche);
+        const jobseeker = { entreprise: 'MTN Cam', poste: 'DSI' };
+
+        await service.create(
+          { ...dto, is_job_seeker: true, jobseeker },
+          currentUser,
+        );
+
+        expect(mockJobseekerService.activerDans).toHaveBeenCalledWith(
+          mockQueryRunnerManager,
+          enRecherche.id,
+          jobseeker,
+          currentUser,
+        );
+      });
+
+      it("n'active rien quand is_job_seeker est false", async () => {
+        setupCreationWithSavedEtudiant(buildEtudiant({ is_job_seeker: false }));
+
+        await service.create(dto, currentUser);
+
+        expect(mockJobseekerService.activerDans).not.toHaveBeenCalled();
+      });
+
+      it('rollback la création si l’activation échoue', async () => {
+        setupCreationWithSavedEtudiant(buildEtudiant({ is_job_seeker: true }));
+        mockJobseekerService.activerDans.mockRejectedValueOnce(
+          new Error('boom'),
+        );
+
+        await expect(
+          service.create({ ...dto, is_job_seeker: true }, currentUser),
+        ).rejects.toThrow();
+
+        expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
+        expect(mockQueryRunner.commitTransaction).not.toHaveBeenCalled();
+      });
+    });
   });
   describe('findAll', () => {
     it('devrait retourner tous les étudiants', async () => {
@@ -294,7 +390,9 @@ describe('EtudiantService', () => {
 
       const result = await service.update('etu-1', dto, currentUser);
 
-      expect(mockUpdate).toHaveBeenCalledWith(
+      expect(mockDataSource.transaction).toHaveBeenCalledTimes(1);
+      expect(mockManager.update).toHaveBeenCalledWith(
+        Etudiant,
         'etu-1',
         expect.objectContaining({
           ...dto,
@@ -310,7 +408,126 @@ describe('EtudiantService', () => {
       await expect(service.update('inconnu', {}, currentUser)).rejects.toThrow(
         NotFoundException,
       );
-      expect(mockUpdate).not.toHaveBeenCalled();
+      expect(mockDataSource.transaction).not.toHaveBeenCalled();
+      expect(mockManager.update).not.toHaveBeenCalled();
+    });
+
+    it("met à jour le nom et le prénom de l'utilisateur dans la transaction", async () => {
+      givenEtudiant({ user: mockUser });
+
+      await service.update('etu-1', { nom: 'Nouveau' }, currentUser);
+
+      expect(mockManager.update).toHaveBeenCalledWith(User, mockUser.id, {
+        nom: 'Nouveau',
+      });
+    });
+
+    describe('update — recherche d’emploi', () => {
+      it("n'écrit pas is_job_seeker via la mise à jour générique", async () => {
+        givenEtudiant({ is_job_seeker: false });
+
+        await service.update('etu-1', { is_job_seeker: true }, currentUser);
+
+        const [entity, , values] = mockManager.update.mock.calls[0] as [
+          unknown,
+          unknown,
+          Record<string, unknown>,
+        ];
+        expect(entity).toBe(Etudiant);
+        // c'est JobseekerService qui écrit le flag, pour rester cohérent avec la table
+        expect(values).not.toHaveProperty('is_job_seeker');
+        expect(values).not.toHaveProperty('jobseeker');
+      });
+
+      it('active la recherche quand is_job_seeker passe à true', async () => {
+        givenEtudiant({ is_job_seeker: false });
+
+        await service.update('etu-1', { is_job_seeker: true }, currentUser);
+
+        expect(mockJobseekerService.activerDans).toHaveBeenCalledWith(
+          mockManager,
+          'etu-1',
+          {},
+          currentUser,
+        );
+        expect(mockJobseekerService.desactiverDans).not.toHaveBeenCalled();
+      });
+
+      it('transmet les détails jobseeker lors du passage à true', async () => {
+        givenEtudiant({ is_job_seeker: false });
+        const jobseeker = { entreprise: 'MTN Cam', poste: 'DSI' };
+
+        await service.update(
+          'etu-1',
+          { is_job_seeker: true, jobseeker },
+          currentUser,
+        );
+
+        expect(mockJobseekerService.activerDans).toHaveBeenCalledWith(
+          mockManager,
+          'etu-1',
+          jobseeker,
+          currentUser,
+        );
+      });
+
+      it('désactive la recherche quand is_job_seeker passe à false', async () => {
+        givenEtudiant({ is_job_seeker: true });
+
+        await service.update('etu-1', { is_job_seeker: false }, currentUser);
+
+        expect(mockJobseekerService.desactiverDans).toHaveBeenCalledWith(
+          mockManager,
+          'etu-1',
+          currentUser,
+        );
+        expect(mockJobseekerService.activerDans).not.toHaveBeenCalled();
+      });
+
+      it("ne désactive rien si l'étudiant n'était pas en recherche", async () => {
+        givenEtudiant({ is_job_seeker: false });
+
+        await service.update('etu-1', { is_job_seeker: false }, currentUser);
+
+        expect(mockJobseekerService.desactiverDans).not.toHaveBeenCalled();
+        expect(mockJobseekerService.activerDans).not.toHaveBeenCalled();
+      });
+
+      it("met à jour les détails d'un étudiant déjà en recherche", async () => {
+        givenEtudiant({ is_job_seeker: true });
+        const jobseeker = { poste: 'CTO' };
+
+        await service.update('etu-1', { jobseeker }, currentUser);
+
+        expect(mockJobseekerService.activerDans).toHaveBeenCalledWith(
+          mockManager,
+          'etu-1',
+          jobseeker,
+          currentUser,
+        );
+      });
+
+      it("ignore les détails jobseeker d'un étudiant qui ne cherche pas", async () => {
+        givenEtudiant({ is_job_seeker: false });
+
+        await service.update(
+          'etu-1',
+          { jobseeker: { poste: 'CTO' } },
+          currentUser,
+        );
+
+        expect(mockJobseekerService.activerDans).not.toHaveBeenCalled();
+        expect(mockJobseekerService.desactiverDans).not.toHaveBeenCalled();
+      });
+
+      it("ne touche pas à la recherche d'emploi quand le dto n'en parle pas", async () => {
+        givenEtudiant({ is_job_seeker: true });
+
+        await service.update('etu-1', { statut: Statut.INACTIF }, currentUser);
+
+        expect(mockJobseekerService.activerDans).not.toHaveBeenCalled();
+        expect(mockJobseekerService.desactiverDans).not.toHaveBeenCalled();
+      });
     });
   });
 
