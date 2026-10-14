@@ -1,15 +1,19 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { Experience } from './experience.entity';
 import { CreateExperienceDto, UpdateExperienceDto } from './experience.dto';
 import { Statut } from '../common/enum/statut.enum';
+import { FileEntity } from '../file/file.entity';
+import { ExceptionFactory } from '../common/exceptions/exception-factory';
 
 @Injectable()
 export class ExperienceService {
   constructor(
     @InjectRepository(Experience)
     private readonly expRepo: Repository<Experience>,
+    @InjectRepository(FileEntity)
+    private readonly fileRepository: Repository<FileEntity>,
   ) {}
 
   async create(
@@ -17,6 +21,19 @@ export class ExperienceService {
     currentUser: { id: string },
   ): Promise<Experience> {
     const exp = this.expRepo.create(dto);
+    if (dto.media_ids?.length) {
+      const trouves = await this.fileRepository.count({
+        where: {
+          id: In(dto.media_ids),
+        },
+      });
+
+      if (trouves !== dto.media_ids.length) {
+        ExceptionFactory.badRequest(
+          'Un ou plusieurs fichiers sont introuvables',
+        );
+      }
+    }
     exp.create_by = currentUser.id;
     exp.dte_creation = new Date();
     return this.expRepo.save(exp);
@@ -48,6 +65,19 @@ export class ExperienceService {
     currentUser: { id: string },
   ): Promise<Experience> {
     const exp = await this.findOne(id);
+    if (dto.media_ids?.length) {
+      const trouves = await this.fileRepository.count({
+        where: {
+          id: In(dto.media_ids),
+        },
+      });
+
+      if (trouves !== dto.media_ids.length) {
+        ExceptionFactory.badRequest(
+          'Un ou plusieurs fichiers sont introuvables',
+        );
+      }
+    }
     exp.dte_modif = new Date();
     exp.updated_by = currentUser.id;
     Object.assign(exp, dto);

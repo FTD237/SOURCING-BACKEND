@@ -7,8 +7,8 @@ import {
   HttpStatus,
   Param,
   ParseUUIDPipe,
+  Patch,
   Post,
-  Put,
   UseGuards,
 } from '@nestjs/common';
 import { ExperienceService } from './experience.service';
@@ -172,7 +172,7 @@ export class ExperienceController {
    * @throws NotFoundException si aucune expérience ne correspond à `id` (404).
    * @throws BadRequestException si les données fournies sont invalides (400).
    */
-  @Put(':id')
+  @Patch(':id')
   @Roles(RolesEnum.ADMIN, RolesEnum.MANAGER, RolesEnum.ETUDIANT)
   @ApiOperation({
     summary: 'Modifier une expérience',

@@ -70,7 +70,7 @@ import { EvaluationModule } from './evaluation/evaluation.module';
     PostulerModule,
     EtudiantSkillModule,
     NotificationModule,
-    EvaluationModule
+    EvaluationModule,
   ],
 })
 export class AppModule {}

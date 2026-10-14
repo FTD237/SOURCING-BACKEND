@@ -17,9 +17,10 @@ import { ActivationTokenService } from '../common/services/activation-token.serv
 import { MailService } from '../mail/mail.service';
 import { Roles } from '../common/enum/roles.enum';
 import { LinkCheckerService } from '../common/services/link-checker.service';
+import { JobseekerService } from '../jobseeker/jobseeker.service';
 
 @Injectable()
-export class EtudiantService {
+class EtudiantService {
   constructor(
     @InjectRepository(Etudiant)
     private readonly etudiantRepo: Repository<Etudiant>,
@@ -31,6 +32,7 @@ export class EtudiantService {
     private readonly activationTokenService: ActivationTokenService,
     private readonly mailService: MailService,
     private readonly linkCheckerService: LinkCheckerService,
+    private readonly jobseekerService: JobseekerService,
   ) {}
   private readonly logger = new Logger(EtudiantService.name);
 
@@ -101,6 +103,15 @@ export class EtudiantService {
 
       savedEtudiant = await queryRunner.manager.save(etudiant);
 
+      if (savedEtudiant.is_job_seeker) {
+        await this.jobseekerService.activerDans(
+          queryRunner.manager,
+          savedEtudiant.id,
+          dto.jobseeker ?? {},
+          currentUser,
+        );
+      }
+
       rawToken = await this.activationTokenService.createAndSave(
         savedUser.id,
         queryRunner.manager,
@@ -158,30 +169,50 @@ export class EtudiantService {
       where: { id },
       relations: { user: true },
     });
-
     if (!etudiant) ExceptionFactory.notFound(`Etudiant`, id);
 
     if (dto.liens)
       await this.linkCheckerService.validateLinksOrThrow(dto.liens);
 
-    const { nom, prenom, ...etudiantFields } = dto;
+    // is_job_seeker et jobseeker sortent de l'update générique :
+    // c'est JobseekerService qui écrit le flag, pour qu'il reste cohérent avec la table
+    const { nom, prenom, is_job_seeker, jobseeker, ...etudiantFields } = dto;
 
-    if (nom || prenom) {
-      await this.userRepo.update(etudiant.user.id, {
-        ...(nom && { nom }),
-        ...(prenom && { prenom }),
+    await this.dataSource.transaction(async (manager) => {
+      if (nom || prenom) {
+        await manager.update(User, etudiant.user.id, {
+          ...(nom && { nom }),
+          ...(prenom && { prenom }),
+        });
+      }
+
+      await manager.update(Etudiant, id, {
+        ...etudiantFields,
+        updated_by: currentUser.id,
+        dte_modif: new Date(),
       });
-    }
 
-    await this.etudiantRepo.update(id, {
-      ...etudiantFields,
-      updated_by: currentUser.id,
-      dte_modif: new Date(),
+      if (is_job_seeker === false) {
+        if (etudiant.is_job_seeker) {
+          await this.jobseekerService.desactiverDans(manager, id, currentUser);
+        }
+      } else if (
+        is_job_seeker === true ||
+        (jobseeker && etudiant.is_job_seeker)
+      ) {
+        // passage à true, ou mise à jour des détails d'un étudiant déjà en recherche
+        await this.jobseekerService.activerDans(
+          manager,
+          id,
+          jobseeker ?? {},
+          currentUser,
+        );
+      }
     });
 
     return this.etudiantRepo.findOne({
       where: { id },
-      relations: { user: true },
+      relations: { user: true, jobseeker: true },
     });
   }
 
@@ -200,3 +231,5 @@ export class EtudiantService {
     }
   }
 }
+
+export default EtudiantService;
