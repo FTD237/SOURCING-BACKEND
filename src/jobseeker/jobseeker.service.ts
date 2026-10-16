@@ -17,24 +17,55 @@ export class JobseekerService {
     private readonly jobseekerRepo: Repository<Jobseeker>,
   ) {}
 
-  /** Passe l'étudiant en recherche d'emploi (ou met à jour ses informations). */
+  /**
+   * Retrouve l'id du profil étudiant à partir de l'id du compte connecté
+   * (Etudiant.userId = user.id). req.user ne contient pas l'id étudiant.
+   */
+  private async getStudentId(
+    userId: string,
+    manager?: EntityManager,
+  ): Promise<string> {
+    if (!userId) {
+      ExceptionFactory.forbidden('Utilisateur non identifié');
+    }
+
+    const repo = (manager ?? this.dataSource.manager).getRepository(Etudiant);
+    const etudiant = await repo.findOne({
+      where: { userId },
+      select: { id: true },
+    });
+
+    if (!etudiant) {
+      ExceptionFactory.notFound('Aucun profil étudiant pour ce compte.');
+    }
+
+    return etudiant.id;
+  }
+
+  /** Profil jobseeker de l'étudiant connecté. */
+  async findMine(userId: string): Promise<Jobseeker> {
+    const studentId = await this.getStudentId(userId);
+    return this.findByStudent(studentId);
+  }
+
+  /** L'étudiant connecté passe en recherche d'emploi (ou met à jour ses infos). */
   activer(
-    studentId: string,
-    dto: UpsertJobseekerDto,
     currentUser: { id: string },
+    dto: UpsertJobseekerDto,
   ): Promise<Jobseeker> {
-    return this.dataSource.transaction((manager) =>
-      this.activerDans(manager, studentId, dto, currentUser),
-    );
+    return this.dataSource.transaction(async (manager) => {
+      const studentId = await this.getStudentId(currentUser.id, manager);
+      return this.activerDans(manager, studentId, dto, currentUser);
+    });
   }
 
-  /** Retire l'étudiant de la recherche d'emploi (soft delete de la ligne jobseeker). */
-  desactiver(studentId: string, currentUser: { id: string }): Promise<void> {
-    return this.dataSource.transaction((manager) =>
-      this.desactiverDans(manager, studentId, currentUser),
-    );
+  /** L'étudiant connecté sort de la recherche d'emploi. */
+  desactiver(currentUser: { id: string }): Promise<void> {
+    return this.dataSource.transaction(async (manager) => {
+      const studentId = await this.getStudentId(currentUser.id, manager);
+      return this.desactiverDans(manager, studentId, currentUser);
+    });
   }
-
   /**
    * Version à appeler depuis une transaction existante, par exemple depuis la
    * mise à jour d'un étudiant quand `is_job_seeker` passe à true.
@@ -46,6 +77,8 @@ export class JobseekerService {
     dto: UpsertJobseekerDto,
     currentUser: { id: string },
   ): Promise<Jobseeker> {
+    if (!studentId) ExceptionFactory.badRequest('studentId requis');
+
     const etudiant = await manager.findOne(Etudiant, {
       where: { id: studentId },
     });
@@ -93,6 +126,8 @@ export class JobseekerService {
     studentId: string,
     currentUser: { id: string },
   ): Promise<void> {
+    if (!studentId) ExceptionFactory.badRequest('studentId requis');
+
     const etudiant = await manager.findOne(Etudiant, {
       where: { id: studentId },
     });
@@ -112,8 +147,11 @@ export class JobseekerService {
   }
 
   async findByStudent(studentId: string): Promise<Jobseeker> {
+    if (!studentId) ExceptionFactory.badRequest('studentId requis');
+
     const jobseeker = await this.jobseekerRepo.findOne({
       where: { studentId, statut: Not(Statut.SUPPRIME) },
+      relations: { etudiant: { user: true } },
     });
     if (!jobseeker) ExceptionFactory.notFound('jobseeker', studentId);
     return jobseeker;
@@ -124,7 +162,7 @@ export class JobseekerService {
 
     const resultat = await this.jobseekerRepo.findAndCount({
       where: { statut: Not(Statut.SUPPRIME) },
-      relations: { etudiant: true },
+      relations: { etudiant: { user: true } },
       order: { dte_creation: 'DESC' },
       skip: (page - 1) * limite,
       take: limite,

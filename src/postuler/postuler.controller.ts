@@ -68,8 +68,10 @@ export class PostulerController {
     type: [Postuler],
   })
   @Roles(RolesEnum.MANAGER, RolesEnum.ETUDIANT, RolesEnum.RH, RolesEnum.ADMIN)
-  findAll(): Promise<Postuler[]> {
-    return this.postulerService.findAll();
+  findAll(
+    @GetUser() currentUser: { id: string; email: string; role: RolesEnum },
+  ): Promise<Postuler[]> {
+    return this.postulerService.findAll(currentUser);
   }
 
   @Get(':id')
@@ -82,8 +84,11 @@ export class PostulerController {
   })
   @ApiResponse({ status: 404, description: 'Candidature introuvable.' })
   @Roles(RolesEnum.MANAGER, RolesEnum.ETUDIANT, RolesEnum.RH)
-  findOne(@Param('id') id: string): Promise<Postuler> {
-    return this.postulerService.findOne(id);
+  findOne(
+    @Param('id') id: string,
+    @GetUser() currentUser: { id: string; email: string; role: RolesEnum },
+  ): Promise<Postuler> {
+    return this.postulerService.findOne(id, currentUser);
   }
 
   @Get('etudiant/:etudiantId')
@@ -99,8 +104,11 @@ export class PostulerController {
     type: [Postuler],
   })
   @Roles(RolesEnum.MANAGER, RolesEnum.ETUDIANT)
-  findByEtudiant(@Param('etudiantId') etudiantId: string): Promise<Postuler[]> {
-    return this.postulerService.findByEtudiant(etudiantId);
+  findByEtudiant(
+    @Param('etudiantId') etudiantId: string,
+    @GetUser() currentUser: { id: string; email: string; role: RolesEnum },
+  ): Promise<Postuler[]> {
+    return this.postulerService.findByEtudiant(etudiantId, currentUser);
   }
 
   @Get('offre/:offreId')
@@ -116,8 +124,11 @@ export class PostulerController {
     type: [Postuler],
   })
   @Roles(RolesEnum.MANAGER, RolesEnum.RH)
-  findByOffre(@Param('offreId') offreId: string): Promise<Postuler[]> {
-    return this.postulerService.findByOffre(offreId);
+  findByOffre(
+    @Param('offreId') offreId: string,
+    @GetUser() currentUser: { id: string; email: string; role: RolesEnum },
+  ): Promise<Postuler[]> {
+    return this.postulerService.findByOffre(offreId, currentUser);
   }
 
   @Patch(':id/statut')
@@ -137,7 +148,7 @@ export class PostulerController {
   updateStatut(
     @Param('id') id: string,
     @Body() dto: UpdatePostulerStatutDto,
-    @GetUser() currentUser: { id: string; email: string },
+    @GetUser() currentUser: { id: string; email: string; role: RolesEnum },
   ): Promise<Postuler> {
     return this.postulerService.updateStatut(id, dto, currentUser);
   }
@@ -153,7 +164,7 @@ export class PostulerController {
   @Roles(RolesEnum.MANAGER, RolesEnum.ETUDIANT)
   remove(
     @Param('id') id: string,
-    @GetUser() currentUser: { id: string; email: string },
+    @GetUser() currentUser: { id: string; email: string; role: RolesEnum },
   ): Promise<void> {
     return this.postulerService.remove(id, currentUser);
   }

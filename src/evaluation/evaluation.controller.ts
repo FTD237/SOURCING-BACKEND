@@ -40,7 +40,8 @@ import { Evaluation } from './evaluation.entity';
 
 interface UtilisateurCourant {
   id: string;
-  companyId: string;
+  email: string;
+  role: string;
 }
 
 @ApiTags('Évaluations')
@@ -63,7 +64,8 @@ export class EvaluationController {
     description: 'Données invalides ou expérience non terminée',
   })
   @ApiForbiddenResponse({
-    description: "L'expérience n'appartient pas à votre entreprise",
+    description:
+      "Aucune entreprise associée à ce compte, ou l'expérience n'appartient pas à votre entreprise",
   })
   @ApiNotFoundResponse({ description: 'Expérience introuvable' })
   @ApiConflictResponse({ description: 'Cette expérience a déjà été évaluée' })
@@ -71,7 +73,7 @@ export class EvaluationController {
     @Body() dto: CreateEvaluationDto,
     @GetUser() user: UtilisateurCourant,
   ) {
-    return this.evaluationService.create(user.companyId, dto, user);
+    return this.evaluationService.create(dto, user);
   }
 
   @Get('etudiant/:studentId')
@@ -113,7 +115,8 @@ export class EvaluationController {
   @ApiOkResponse({ description: 'Évaluation mise à jour', type: Evaluation })
   @ApiBadRequestResponse({ description: 'Données invalides' })
   @ApiForbiddenResponse({
-    description: "Cette évaluation n'appartient pas à votre entreprise",
+    description:
+      "Aucune entreprise associée à ce compte, ou cette évaluation n'appartient pas à votre entreprise",
   })
   @ApiNotFoundResponse({ description: 'Évaluation introuvable' })
   update(
@@ -121,7 +124,7 @@ export class EvaluationController {
     @Body() dto: UpdateEvaluationDto,
     @GetUser() user: UtilisateurCourant,
   ) {
-    return this.evaluationService.update(user.companyId, id, dto, user);
+    return this.evaluationService.update(id, dto, user);
   }
 
   @Delete(':id')
@@ -139,13 +142,14 @@ export class EvaluationController {
   })
   @ApiNoContentResponse({ description: 'Évaluation supprimée' })
   @ApiForbiddenResponse({
-    description: "Cette évaluation n'appartient pas à votre entreprise",
+    description:
+      "Aucune entreprise associée à ce compte, ou cette évaluation n'appartient pas à votre entreprise",
   })
   @ApiNotFoundResponse({ description: 'Évaluation introuvable' })
   remove(
     @Param('id', ParseUUIDPipe) id: string,
     @GetUser() user: UtilisateurCourant,
   ) {
-    return this.evaluationService.remove(user.companyId, id, user);
+    return this.evaluationService.remove(id, user);
   }
 }
