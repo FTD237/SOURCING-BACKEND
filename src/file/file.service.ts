@@ -6,9 +6,27 @@ import { extname } from 'node:path';
 import { FileEntity } from './file.entity';
 import { StorageService } from './storage.service';
 import { Statut } from '../common/enum/statut.enum';
+import { Roles } from '../common/enum/roles.enum';
 import { ExceptionFactory } from '../common/exceptions/exception-factory';
 
-const ADMIN_ROLES = new Set(['admin', 'super-admin']);
+/**
+ * Rôles autorisés à consulter et télécharger le fichier d'un autre
+ * utilisateur. Aligné sur `GET /etudiants/:id`, qui laisse déjà ces
+ * rôles consulter la fiche d'un étudiant : sans cela, la fiche est
+ * visible mais ses pièces jointes restent inaccessibles.
+ */
+const STAFF_READ_ROLES = new Set<string>([
+  Roles.ADMIN,
+  Roles.SUPERADMIN,
+  Roles.MANAGER,
+  Roles.RH,
+]);
+
+/**
+ * Suppression volontairement plus restrictive que la lecture : un RH
+ * consulte les pièces d'un étudiant, mais ne les supprime pas.
+ */
+const ADMIN_DELETE_ROLES = new Set<string>([Roles.ADMIN, Roles.SUPERADMIN]);
 
 @Injectable()
 export class FileService {
@@ -53,7 +71,7 @@ export class FileService {
       ExceptionFactory.notFound('Fichier', id);
     }
 
-    this.assertAccess(file, requester);
+    this.assertCanRead(file, requester);
 
     return file;
   }
@@ -70,6 +88,7 @@ export class FileService {
     requester: { id: string; role: string },
   ): Promise<void> {
     const file = await this.findOne(id, requester);
+    this.assertCanDelete(file, requester);
 
     file.statut = Statut.SUPPRIME;
     file.dte_suppression = new Date();
@@ -79,15 +98,27 @@ export class FileService {
     await this.storageService.delete(file.stored_name).catch(() => undefined);
   }
 
-  private assertAccess(
+  private assertCanRead(
     file: FileEntity,
     requester: { id: string; role: string },
   ): void {
     const isOwner = file.user_id === requester.id;
-    const isAdmin = ADMIN_ROLES.has(requester.role);
 
-    if (!isOwner && !isAdmin) {
+    if (!isOwner && !STAFF_READ_ROLES.has(requester.role)) {
       ExceptionFactory.forbidden("Vous n'avez pas accès à ce fichier");
+    }
+  }
+
+  private assertCanDelete(
+    file: FileEntity,
+    requester: { id: string; role: string },
+  ): void {
+    const isOwner = file.user_id === requester.id;
+
+    if (!isOwner && !ADMIN_DELETE_ROLES.has(requester.role)) {
+      ExceptionFactory.forbidden(
+        "Vous n'êtes pas autorisé à supprimer ce fichier",
+      );
     }
   }
 }

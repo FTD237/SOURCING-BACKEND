@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Postuler } from './postuler.entity';
-import { Repository } from 'typeorm';
+import { FindOptionsWhere, Repository } from 'typeorm';
 import { CreatePostulerDto } from './dto/create-postuler.dto';
 import { ExceptionFactory } from '../common/exceptions/exception-factory';
 import { UpdatePostulerStatutDto } from './dto/update-postuler-statut.dto';
@@ -9,6 +9,9 @@ import { Statut } from '../common/enum/statut.enum';
 import { NotificationService } from '../notifications/notification.service';
 import { NotificationType } from '../common/enum/notification-type.enum';
 import { StatutCandidature } from '../common/enum/statut-candidature.enum';
+import { Roles } from '../common/enum/roles.enum';
+
+export type CurrentUser = { id: string; email: string; role: Roles };
 
 @Injectable()
 export class PostulerService {
@@ -58,24 +61,40 @@ export class PostulerService {
   }
 
   /**
-   * Retourne toutes les candidatures, avec les relations offre et étudiant.
+   * Filtre d'accès selon le rôle :
+   * - MANAGER  : toutes les candidatures
+   * - RH       : candidatures des offres qu'il a postées
+   * - ETUDIANT : ses propres candidatures
    */
-  async findAll(): Promise<Postuler[]> {
+  private accessWhere(user: CurrentUser): FindOptionsWhere<Postuler> {
+    switch (user.role) {
+      case Roles.MANAGER:
+        return {};
+      case Roles.RH:
+        return { offre: { create_by: user.id } };
+      case Roles.ETUDIANT:
+        return { etudiant: { userId: user.id } };
+      default:
+        ExceptionFactory.forbidden('Accès Refuser');
+    }
+  }
+
+  async findAll(user: CurrentUser): Promise<Postuler[]> {
     return this.postulerRepository.find({
-      relations: { offre: true, etudiant: true },
+      where: this.accessWhere(user),
+      relations: { offre: { company: true }, etudiant: { user: true } },
       order: { date_candidature: 'DESC' },
     });
   }
 
-  /**
-   * Retourne une candidature par son id, ou lève une 404 si introuvable.
-   */
-  async findOne(id: string): Promise<Postuler> {
+  async findOne(id: string, user: CurrentUser): Promise<Postuler> {
     const postuler = await this.postulerRepository.findOne({
-      where: { id },
-      relations: { offre: true, etudiant: true },
+      where: { id, ...this.accessWhere(user) },
+      relations: { offre: { company: true }, etudiant: { user: true } },
     });
 
+    // 404 aussi quand la candidature existe, mais n'est pas accessible :
+    // on ne révèle pas son existence.
     if (!postuler) {
       ExceptionFactory.notFound(`Candidature ${id} introuvable.`);
     }
@@ -83,24 +102,21 @@ export class PostulerService {
     return postuler;
   }
 
-  /**
-   * Retourne toutes les candidatures reçues pour une offre donnée.
-   */
-  async findByOffre(offreId: string): Promise<Postuler[]> {
+  async findByOffre(offreId: string, user: CurrentUser): Promise<Postuler[]> {
     return this.postulerRepository.find({
-      where: { offreId },
-      relations: { etudiant: true },
+      where: { offreId, ...this.accessWhere(user) },
+      relations: { etudiant: { user: true } },
       order: { date_candidature: 'DESC' },
     });
   }
 
-  /**
-   * Retourne toutes les candidatures d'un étudiant donné.
-   */
-  async findByEtudiant(etudiantId: string): Promise<Postuler[]> {
+  async findByEtudiant(
+    etudiantId: string,
+    user: CurrentUser,
+  ): Promise<Postuler[]> {
     return this.postulerRepository.find({
-      where: { etudiantId },
-      relations: { offre: true },
+      where: { etudiantId, ...this.accessWhere(user) },
+      relations: { offre: { company: true } },
       order: { date_candidature: 'DESC' },
     });
   }
@@ -111,9 +127,9 @@ export class PostulerService {
   async updateStatut(
     id: string,
     dto: UpdatePostulerStatutDto,
-    currentUser: { id: string; email: string },
+    currentUser: CurrentUser,
   ): Promise<Postuler> {
-    const postuler = await this.findOne(id);
+    const postuler = await this.findOne(id, currentUser);
     postuler.statut_candidature = dto.statut;
     postuler.updated_by = currentUser.id;
     postuler.dte_modif = new Date();
@@ -161,11 +177,8 @@ export class PostulerService {
   /**
    * Supprime une candidature (retrait de candidature)
    */
-  async remove(
-    id: string,
-    currentUser: { id: string; email: string },
-  ): Promise<void> {
-    const postuler = await this.findOne(id);
+  async remove(id: string, currentUser: CurrentUser): Promise<void> {
+    const postuler = await this.findOne(id, currentUser);
     postuler.statut = Statut.SUPPRIME;
     postuler.dte_suppression = new Date();
     postuler.updated_by = currentUser.id;

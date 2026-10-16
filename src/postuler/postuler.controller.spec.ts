@@ -7,12 +7,17 @@ import { Postuler } from './postuler.entity';
 import { CreatePostulerDto } from './dto/create-postuler.dto';
 import { UpdatePostulerStatutDto } from './dto/update-postuler-statut.dto';
 import { StatutCandidature } from '../common/enum/statut-candidature.enum';
+import { Roles } from '../common/enum/roles.enum';
 
 describe('PostulerController', () => {
   let controller: PostulerController;
   let service: jest.Mocked<PostulerService>;
 
-  const currentUser = { id: 'user-1', email: 'user@test.com' };
+  const currentUser = {
+    id: 'user-1',
+    email: 'user@test.com',
+    role: Roles.ADMIN,
+  };
 
   const mockPostuler: Postuler = {
     id: 'postuler-1',
@@ -63,7 +68,7 @@ describe('PostulerController', () => {
   it('findAll() retourne la liste des candidatures', async () => {
     service.findAll.mockResolvedValue([mockPostuler]);
 
-    const result = await controller.findAll();
+    const result = await controller.findAll(currentUser);
 
     expect(service.findAll).toHaveBeenCalled();
     expect(result).toEqual([mockPostuler]);
@@ -72,27 +77,30 @@ describe('PostulerController', () => {
   it('findOne() retourne une candidature par id', async () => {
     service.findOne.mockResolvedValue(mockPostuler);
 
-    const result = await controller.findOne('postuler-1');
+    const result = await controller.findOne('postuler-1', currentUser);
 
-    expect(service.findOne).toHaveBeenCalledWith('postuler-1');
+    expect(service.findOne).toHaveBeenCalledWith('postuler-1', currentUser);
     expect(result).toEqual(mockPostuler);
   });
 
   it('findByEtudiant() délègue au service', async () => {
     service.findByEtudiant.mockResolvedValue([mockPostuler]);
 
-    const result = await controller.findByEtudiant('etudiant-1');
+    const result = await controller.findByEtudiant('etudiant-1', currentUser);
 
-    expect(service.findByEtudiant).toHaveBeenCalledWith('etudiant-1');
+    expect(service.findByEtudiant).toHaveBeenCalledWith(
+      'etudiant-1',
+      currentUser,
+    );
     expect(result).toEqual([mockPostuler]);
   });
 
   it('findByOffre() délègue au service', async () => {
     service.findByOffre.mockResolvedValue([mockPostuler]);
 
-    const result = await controller.findByOffre('offre-1');
+    const result = await controller.findByOffre('offre-1', currentUser);
 
-    expect(service.findByOffre).toHaveBeenCalledWith('offre-1');
+    expect(service.findByOffre).toHaveBeenCalledWith('offre-1', currentUser);
     expect(result).toEqual([mockPostuler]);
   });
 

@@ -150,6 +150,7 @@ describe('OffreService', () => {
 
       expect(repository.findOne).toHaveBeenCalledWith({
         where: { id: 'exemple-uuid' },
+        relations: { company: true, skills: true },
       });
       expect(result).toEqual(mockOffre);
     });

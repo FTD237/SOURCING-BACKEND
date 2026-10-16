@@ -5,6 +5,7 @@ import { DataSource, EntityManager, Not, Repository } from 'typeorm';
 import { Evaluation } from './evaluation.entity';
 import { Experience } from '../experience/experience.entity';
 import { Etudiant } from '../etudiant/etudiant.entity';
+import Company from '../company/company.entity';
 import { CreateEvaluationDto } from './dto/create-evaluation.dto';
 import { ExceptionFactory } from '../common/exceptions/exception-factory';
 import { Statut } from '../common/enum/statut.enum';
@@ -19,11 +20,30 @@ export class EvaluationService {
     private readonly evalRepo: Repository<Evaluation>,
   ) {}
 
-  async create(
-    companyId: string,
-    dto: CreateEvaluationDto,
-    currentUser: { id: string },
-  ) {
+  /**
+   * Retrouve l'id de la company du RH connecté (Company.user_id = user.id).
+   * Lève un 403 si l'utilisateur n'est pas identifié ou n'a pas de company.
+   */
+  private async getCompanyId(userId: string): Promise<string> {
+    if (!userId) {
+      ExceptionFactory.forbidden('Utilisateur non identifié');
+    }
+
+    const company = await this.dataSource.getRepository(Company).findOne({
+      where: { user_id: userId },
+      select: { id: true },
+    });
+
+    if (!company) {
+      ExceptionFactory.forbidden('Aucune entreprise associée à ce compte');
+    }
+
+    return company.id;
+  }
+
+  async create(dto: CreateEvaluationDto, currentUser: { id: string }) {
+    const companyId = await this.getCompanyId(currentUser.id);
+
     return this.dataSource.transaction(async (manager) => {
       const experience = await manager.findOne(Experience, {
         where: { id: dto.experience_id },
@@ -61,11 +81,9 @@ export class EvaluationService {
     });
   }
 
-  async remove(
-    companyId: string,
-    evaluationId: string,
-    currentUser: { id: string },
-  ) {
+  async remove(evaluationId: string, currentUser: { id: string }) {
+    const companyId = await this.getCompanyId(currentUser.id);
+
     return this.dataSource.transaction(async (manager) => {
       const ev = await manager.findOne(Evaluation, {
         where: { id: evaluationId, statut: Not(Statut.SUPPRIME) },
@@ -87,11 +105,12 @@ export class EvaluationService {
   }
 
   async update(
-    companyId: string,
     evaluationId: string,
     dto: UpdateEvaluationDto,
     currentUser: { id: string },
   ) {
+    const companyId = await this.getCompanyId(currentUser.id);
+
     return this.dataSource.transaction(async (manager) => {
       const ev = await manager.findOne(Evaluation, {
         where: { id: evaluationId, statut: Not(Statut.SUPPRIME) },

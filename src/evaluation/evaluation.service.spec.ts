@@ -27,7 +27,13 @@ function makeManager(avg: string | null = '4') {
     andWhere: jest.fn().mockReturnThis(),
     getRawOne: jest.fn().mockResolvedValue(avg === null ? undefined : { avg }),
   };
+  // Repository Company : getCompanyId le charge via
+  // dataSource.getRepository(Company), hors transaction.
+  const companyRepo = {
+    findOne: jest.fn().mockResolvedValue({ id: COMPANY_ID }),
+  };
   return {
+    companyRepo,
     findOne: jest.fn(),
     exists: jest.fn(),
     create: jest.fn((_entity: unknown, data: object) => ({ ...data })),
@@ -67,6 +73,7 @@ describe('EvaluationService', () => {
           provide: DataSource,
           useValue: {
             transaction: jest.fn((cb: (m: unknown) => unknown) => cb(manager)),
+            getRepository: jest.fn().mockReturnValue(manager.companyRepo),
           },
         },
         { provide: getRepositoryToken(Evaluation), useValue: evalRepo },
@@ -89,10 +96,27 @@ describe('EvaluationService', () => {
       date_fin: '2020-01-01',
     };
 
+    it("lève Forbidden si l'utilisateur n'a pas d'entreprise", async () => {
+      manager.companyRepo.findOne.mockResolvedValue(null);
+
+      // type d'exception volontairement non précisé : à adapter à ce que
+      // getCompanyId lève réellement quand la company est introuvable.
+      await expect(service.create(dto, USER)).rejects.toThrow();
+      expect(manager.findOne).not.toHaveBeenCalled();
+      expect(manager.save).not.toHaveBeenCalled();
+    });
+
+    it("lève Forbidden si l'utilisateur n'est pas identifié", async () => {
+      await expect(
+        service.create(dto, {} as unknown as typeof USER),
+      ).rejects.toThrow(ForbiddenException);
+      expect(manager.save).not.toHaveBeenCalled();
+    });
+
     it("lève NotFound si l'expérience n'existe pas", async () => {
       manager.findOne.mockResolvedValue(null);
 
-      await expect(service.create(COMPANY_ID, dto, USER)).rejects.toThrow(
+      await expect(service.create(dto, USER)).rejects.toThrow(
         NotFoundException,
       );
       expect(manager.save).not.toHaveBeenCalled();
@@ -104,7 +128,7 @@ describe('EvaluationService', () => {
         company_id: OTHER_COMPANY_ID,
       });
 
-      await expect(service.create(COMPANY_ID, dto, USER)).rejects.toThrow(
+      await expect(service.create(dto, USER)).rejects.toThrow(
         ForbiddenException,
       );
       expect(manager.save).not.toHaveBeenCalled();
@@ -116,7 +140,7 @@ describe('EvaluationService', () => {
         date_fin: new Date(Date.now() + 24 * 3600 * 1000),
       });
 
-      await expect(service.create(COMPANY_ID, dto, USER)).rejects.toThrow(
+      await expect(service.create(dto, USER)).rejects.toThrow(
         BadRequestException,
       );
       expect(manager.save).not.toHaveBeenCalled();
@@ -126,7 +150,7 @@ describe('EvaluationService', () => {
       manager.findOne.mockResolvedValue(pastExperience);
       manager.exists.mockResolvedValue(true);
 
-      await expect(service.create(COMPANY_ID, dto, USER)).rejects.toThrow(
+      await expect(service.create(dto, USER)).rejects.toThrow(
         ConflictException,
       );
       expect(manager.save).not.toHaveBeenCalled();
@@ -136,7 +160,7 @@ describe('EvaluationService', () => {
       manager.findOne.mockResolvedValue(pastExperience);
       manager.exists.mockResolvedValue(false);
 
-      await service.create(COMPANY_ID, dto, USER);
+      await service.create(dto, USER);
 
       const [entity, options] = manager.exists.mock.calls[0] as [
         unknown,
@@ -151,7 +175,7 @@ describe('EvaluationService', () => {
       manager.findOne.mockResolvedValue(pastExperience);
       manager.exists.mockResolvedValue(false);
 
-      const result = await service.create(COMPANY_ID, dto, USER);
+      const result = await service.create(dto, USER);
 
       expect(manager.create).toHaveBeenCalledWith(
         Evaluation,
@@ -178,11 +202,7 @@ describe('EvaluationService', () => {
       manager.findOne.mockResolvedValue(pastExperience);
       manager.exists.mockResolvedValue(false);
 
-      await service.create(
-        COMPANY_ID,
-        { experience_id: 'exp-1', note: 3 },
-        USER,
-      );
+      await service.create({ experience_id: 'exp-1', note: 3 }, USER);
 
       expect(manager.create).toHaveBeenCalledWith(
         Evaluation,
@@ -195,9 +215,9 @@ describe('EvaluationService', () => {
     it("lève NotFound si l'évaluation n'existe pas", async () => {
       manager.findOne.mockResolvedValue(null);
 
-      await expect(
-        service.update(COMPANY_ID, 'eval-1', { note: 4 }, USER),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.update('eval-1', { note: 4 }, USER)).rejects.toThrow(
+        NotFoundException,
+      );
       expect(manager.save).not.toHaveBeenCalled();
     });
 
@@ -206,21 +226,16 @@ describe('EvaluationService', () => {
         makeEvaluation({ company_id: OTHER_COMPANY_ID }),
       );
 
-      await expect(
-        service.update(COMPANY_ID, 'eval-1', { note: 4 }, USER),
-      ).rejects.toThrow(ForbiddenException);
+      await expect(service.update('eval-1', { note: 4 }, USER)).rejects.toThrow(
+        ForbiddenException,
+      );
       expect(manager.save).not.toHaveBeenCalled();
     });
 
     it('modifie la note, trace updated_by et recalcule la moyenne', async () => {
       manager.findOne.mockResolvedValue(makeEvaluation());
 
-      const result = await service.update(
-        COMPANY_ID,
-        'eval-1',
-        { note: 5 },
-        USER,
-      );
+      const result = await service.update('eval-1', { note: 5 }, USER);
 
       expect(result).toEqual(
         expect.objectContaining({ note: 5, updated_by: USER.id }),
@@ -237,7 +252,6 @@ describe('EvaluationService', () => {
       manager.findOne.mockResolvedValue(makeEvaluation());
 
       const result = await service.update(
-        COMPANY_ID,
         'eval-1',
         { commentaire: 'Nouveau commentaire' },
         USER,
@@ -256,7 +270,7 @@ describe('EvaluationService', () => {
     it('ne modifie rien quand le corps est vide', async () => {
       manager.findOne.mockResolvedValue(makeEvaluation());
 
-      const result = await service.update(COMPANY_ID, 'eval-1', {}, USER);
+      const result = await service.update('eval-1', {}, USER);
 
       expect(result).toEqual(
         expect.objectContaining({ note: 3, commentaire: 'Correct' }),
@@ -269,7 +283,7 @@ describe('EvaluationService', () => {
     it("lève NotFound si l'évaluation n'existe pas ou est déjà supprimée", async () => {
       manager.findOne.mockResolvedValue(null);
 
-      await expect(service.remove(COMPANY_ID, 'eval-1', USER)).rejects.toThrow(
+      await expect(service.remove('eval-1', USER)).rejects.toThrow(
         NotFoundException,
       );
       expect(manager.update).not.toHaveBeenCalled();
@@ -280,7 +294,7 @@ describe('EvaluationService', () => {
         makeEvaluation({ company_id: OTHER_COMPANY_ID }),
       );
 
-      await expect(service.remove(COMPANY_ID, 'eval-1', USER)).rejects.toThrow(
+      await expect(service.remove('eval-1', USER)).rejects.toThrow(
         ForbiddenException,
       );
       expect(manager.update).not.toHaveBeenCalled();
@@ -289,7 +303,7 @@ describe('EvaluationService', () => {
     it('fait un soft delete puis recalcule la moyenne', async () => {
       manager.findOne.mockResolvedValue(makeEvaluation());
 
-      await service.remove(COMPANY_ID, 'eval-1', USER);
+      await service.remove('eval-1', USER);
 
       expect(manager.update).toHaveBeenNthCalledWith(
         1,
@@ -367,7 +381,7 @@ describe('EvaluationService', () => {
   describe('recalcul de star_rate', () => {
     async function recalcViaRemove() {
       manager.findOne.mockResolvedValue(makeEvaluation());
-      await service.remove(COMPANY_ID, 'eval-1', USER);
+      await service.remove('eval-1', USER);
       return manager.update.mock.calls[1] as [
         unknown,
         unknown,

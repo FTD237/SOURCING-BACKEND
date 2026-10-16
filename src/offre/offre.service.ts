@@ -35,11 +35,16 @@ export class OffreService {
   }
 
   async findAll(): Promise<Offre[]> {
-    return this.offreRepo.find();
+    return this.offreRepo.find({
+      relations: { company: true, skills: true },
+    });
   }
 
   async findOne(id: string): Promise<Offre> {
-    const offre = await this.offreRepo.findOne({ where: { id } });
+    const offre = await this.offreRepo.findOne({
+      where: { id },
+      relations: { company: true, skills: true },
+    });
     if (!offre) {
       ExceptionFactory.notFound(`Offre #${id} introuvable.`);
     }

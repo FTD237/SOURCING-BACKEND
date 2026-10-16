@@ -7,8 +7,9 @@ import { EvaluationService } from './evaluation.service';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { RolesGuard } from '../guards/roles.guard';
 import { PaginationDto } from '../common/pagination';
+import { Roles } from '../common/enum/roles.enum';
 
-const USER = { id: 'user-1', companyId: 'company-1' };
+const USER = { id: 'user-1', email: 'machin@email.com', role: Roles.ADMIN };
 
 describe('EvaluationController', () => {
   let controller: EvaluationController;
@@ -42,14 +43,15 @@ describe('EvaluationController', () => {
   });
 
   describe('create', () => {
-    it("délègue au service avec l'entreprise de l'utilisateur", async () => {
+    it('délègue au service avec le dto et l’utilisateur', async () => {
       const dto = { experience_id: 'exp-1', note: 5, commentaire: 'Top' };
       const created = { id: 'eval-1', ...dto };
       service.create.mockResolvedValue(created);
 
       const result = await controller.create(dto, USER);
 
-      expect(service.create).toHaveBeenCalledWith(USER.companyId, dto, USER);
+      // l'entreprise est retrouvée par le service à partir de l'utilisateur
+      expect(service.create).toHaveBeenCalledWith(dto, USER);
       expect(result).toBe(created);
     });
 
@@ -87,27 +89,18 @@ describe('EvaluationController', () => {
 
       const result = await controller.update('eval-1', dto, USER);
 
-      expect(service.update).toHaveBeenCalledWith(
-        USER.companyId,
-        'eval-1',
-        dto,
-        USER,
-      );
+      expect(service.update).toHaveBeenCalledWith('eval-1', dto, USER);
       expect(result).toBe(updated);
     });
   });
 
   describe('remove', () => {
-    it("délègue au service avec l'entreprise et l'utilisateur", async () => {
+    it("délègue au service avec l'id et l'utilisateur", async () => {
       service.remove.mockResolvedValue(undefined);
 
       await controller.remove('eval-1', USER);
 
-      expect(service.remove).toHaveBeenCalledWith(
-        USER.companyId,
-        'eval-1',
-        USER,
-      );
+      expect(service.remove).toHaveBeenCalledWith('eval-1', USER);
     });
 
     it('répond en 204 No Content', () => {

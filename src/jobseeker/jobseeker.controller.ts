@@ -6,6 +6,8 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Param,
+  ParseUUIDPipe,
   Put,
   Query,
   UseGuards,
@@ -46,7 +48,7 @@ export class JobseekerController {
   constructor(private readonly jobseekerService: JobseekerService) {}
 
   @Get()
-  @Roles(RolesEnum.RH)
+  @Roles(RolesEnum.RH, RolesEnum.MANAGER)
   @ApiOperation({
     summary: "Lister les étudiants en recherche d'emploi",
     description: 'Résultat paginé. Les profils désactivés sont exclus.',
@@ -65,8 +67,17 @@ export class JobseekerController {
     return this.jobseekerService.findByStudent(user.etudiantId);
   }
 
+  @Get('etudiant/:studentId')
+  @Roles(RolesEnum.RH, RolesEnum.MANAGER)
+  @ApiOperation({ summary: "Consulter le profil d'un jobseeker" })
+  @ApiOkResponse({ type: Jobseeker })
+  @ApiNotFoundResponse({ description: 'Pas de jobseeker ayant cet id' })
+  findOneByStudent(@Param('studentId', ParseUUIDPipe) studentId: string) {
+    return this.jobseekerService.findByStudent(studentId);
+  }
+
   @Put('me')
-  @Roles(RolesEnum.ETUDIANT)
+  @Roles(RolesEnum.ETUDIANT, RolesEnum.MANAGER)
   @ApiOperation({
     summary: "Passer en recherche d'emploi ou mettre à jour mon profil",
     description:
@@ -78,11 +89,11 @@ export class JobseekerController {
     @Body() dto: UpsertJobseekerDto,
     @GetUser() user: UtilisateurCourant,
   ) {
-    return this.jobseekerService.activer(user.etudiantId, dto, user);
+    return this.jobseekerService.activer(user, dto);
   }
 
   @Delete('me')
-  @Roles(RolesEnum.ETUDIANT)
+  @Roles(RolesEnum.ETUDIANT, RolesEnum.MANAGER)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({
     summary: "Quitter la recherche d'emploi",
@@ -91,6 +102,6 @@ export class JobseekerController {
   })
   @ApiNoContentResponse({ description: 'Profil désactivé' })
   deactivate(@GetUser() user: UtilisateurCourant) {
-    return this.jobseekerService.desactiver(user.etudiantId, user);
+    return this.jobseekerService.desactiver(user);
   }
 }
