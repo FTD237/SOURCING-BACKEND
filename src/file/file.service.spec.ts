@@ -35,6 +35,8 @@ describe('FileService', () => {
 
   const owner = { id: 'user-1', role: 'etudiant' };
   const admin = { id: 'admin-1', role: 'admin' };
+  const rh = { id: 'rh-1', role: 'rh' };
+  const manager = { id: 'manager-1', role: 'manager' };
   const stranger = { id: 'user-2', role: 'etudiant' };
 
   const buildFile = (overrides: Partial<FileEntity> = {}): FileEntity =>
@@ -137,6 +139,20 @@ describe('FileService', () => {
 
       await expect(service.findOne('file-1', admin)).resolves.toEqual(file);
     });
+
+    it("autorise un RH à consulter le fichier d'un étudiant", async () => {
+      const file = buildFile();
+      mockFindOne.mockResolvedValue(file);
+
+      await expect(service.findOne('file-1', rh)).resolves.toEqual(file);
+    });
+
+    it("autorise un manager à consulter le fichier d'un étudiant", async () => {
+      const file = buildFile();
+      mockFindOne.mockResolvedValue(file);
+
+      await expect(service.findOne('file-1', manager)).resolves.toEqual(file);
+    });
   });
 
   describe('getDownloadUrl', () => {
@@ -171,6 +187,26 @@ describe('FileService', () => {
       mockFindOne.mockResolvedValue(buildFile());
 
       await expect(service.remove('file-1', stranger)).rejects.toThrow(
+        ForbiddenException,
+      );
+      expect(mockSave).not.toHaveBeenCalled();
+    });
+
+    it('autorise un admin à supprimer le fichier d’un tiers', async () => {
+      const file = buildFile();
+      mockFindOne.mockResolvedValue(file);
+      mockSave.mockResolvedValue(file);
+
+      await service.remove('file-1', admin);
+
+      expect(file.statut).toBe(Statut.SUPPRIME);
+      expect(mockSave).toHaveBeenCalledWith(file);
+    });
+
+    it("refuse à un RH de supprimer, bien qu'il puisse consulter", async () => {
+      mockFindOne.mockResolvedValue(buildFile());
+
+      await expect(service.remove('file-1', rh)).rejects.toThrow(
         ForbiddenException,
       );
       expect(mockSave).not.toHaveBeenCalled();
