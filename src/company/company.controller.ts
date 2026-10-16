@@ -122,6 +122,7 @@ export class CompanyController {
     RolesEnum.MANAGER,
     RolesEnum.SUPERADMIN,
     RolesEnum.ETUDIANT,
+    RolesEnum.RH,
   )
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({

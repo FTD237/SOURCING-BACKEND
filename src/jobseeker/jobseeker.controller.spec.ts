@@ -74,14 +74,15 @@ describe('JobseekerController', () => {
   });
 
   describe('activate', () => {
-    it("active la recherche d'emploi de l'étudiant connecté", async () => {
+    it("active la recherche d'emploi de l'utilisateur connecté", async () => {
       const dto = { entreprise: 'MTN Cam', poste: 'DSI', is_jobless: false };
       const jobseeker = { id: 'js-1', ...dto };
       service.activer.mockResolvedValue(jobseeker);
 
       const result = await controller.activate(dto, USER);
 
-      expect(service.activer).toHaveBeenCalledWith(USER.etudiantId, dto, USER);
+      // le service retrouve l'étudiant à partir de l'utilisateur
+      expect(service.activer).toHaveBeenCalledWith(USER, dto);
       expect(result).toBe(jobseeker);
     });
 
@@ -90,17 +91,17 @@ describe('JobseekerController', () => {
 
       await controller.activate({}, USER);
 
-      expect(service.activer).toHaveBeenCalledWith(USER.etudiantId, {}, USER);
+      expect(service.activer).toHaveBeenCalledWith(USER, {});
     });
   });
 
   describe('deactivate', () => {
-    it("désactive la recherche d'emploi de l'étudiant connecté", async () => {
+    it("désactive la recherche d'emploi de l'utilisateur connecté", async () => {
       service.desactiver.mockResolvedValue(undefined);
 
       await controller.deactivate(USER);
 
-      expect(service.desactiver).toHaveBeenCalledWith(USER.etudiantId, USER);
+      expect(service.desactiver).toHaveBeenCalledWith(USER);
     });
 
     it('répond en 204 No Content', () => {

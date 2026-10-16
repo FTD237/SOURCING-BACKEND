@@ -360,7 +360,7 @@ describe('EtudiantService', () => {
 
       expect(mockFindOne).toHaveBeenCalledWith({
         where: { id: 'etu-1' },
-        relations: { user: true },
+        relations: { user: true, jobseeker: true },
       });
       expect(result).toEqual(mockEtudiant);
     });

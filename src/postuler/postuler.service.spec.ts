@@ -1,5 +1,6 @@
 // src/postuler/postuler.service.spec.ts
 /* eslint-disable @typescript-eslint/unbound-method */
+import { ForbiddenException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -12,13 +13,21 @@ import { StatutCandidature } from '../common/enum/statut-candidature.enum';
 import { Statut } from '../common/enum/statut.enum';
 import { NotificationService } from '../notifications/notification.service';
 import { NotificationType } from '../common/enum/notification-type.enum';
+import { Roles } from '../common/enum/roles.enum';
 
 describe('PostulerService', () => {
   let service: PostulerService;
   let notificationService: jest.Mocked<NotificationService>;
   let repository: jest.Mocked<Repository<Postuler>>;
 
-  const currentUser = { id: 'user-1', email: 'user@test.com' };
+  // Le service filtre l'accès selon user.role (accessWhere) : un MANAGER
+  // voit tout ({}), un rôle inconnu tombe dans le default -> 403.
+  const MANAGER = {
+    id: 'user-1',
+    email: 'user@test.com',
+    role: Roles.MANAGER,
+  };
+  const currentUser = MANAGER;
 
   const mockPostuler: Postuler = {
     id: 'postuler-1',
@@ -116,16 +125,28 @@ describe('PostulerService', () => {
   });
 
   describe('findAll', () => {
-    it('retourne toutes les candidatures avec relations', async () => {
+    it('retourne toutes les candidatures avec relations (MANAGER)', async () => {
       repository.find.mockResolvedValue([mockPostuler]);
 
-      const result = await service.findAll();
+      const result = await service.findAll(MANAGER);
 
-      expect(repository.find).toHaveBeenCalledWith({
-        relations: { offre: true, etudiant: true },
-        order: { date_candidature: 'DESC' },
-      });
+      expect(repository.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {},
+          relations: { offre: { company: true }, etudiant: { user: true } },
+          order: { date_candidature: 'DESC' },
+        }),
+      );
       expect(result).toEqual([mockPostuler]);
+    });
+
+    it('lève une 403 pour un rôle inconnu', async () => {
+      const inconnu = { ...MANAGER, role: 'inconnu' as unknown as Roles };
+
+      await expect(service.findAll(inconnu)).rejects.toThrow(
+        ForbiddenException,
+      );
+      expect(repository.find).not.toHaveBeenCalled();
     });
   });
 
@@ -133,7 +154,7 @@ describe('PostulerService', () => {
     it('retourne la candidature si trouvée', async () => {
       repository.findOne.mockResolvedValue(mockPostuler);
 
-      const result = await service.findOne('postuler-1');
+      const result = await service.findOne('postuler-1', MANAGER);
 
       expect(result).toEqual(mockPostuler);
     });
@@ -146,8 +167,18 @@ describe('PostulerService', () => {
           throw new Error('not found');
         });
 
-      await expect(service.findOne('unknown')).rejects.toThrow('not found');
+      await expect(service.findOne('unknown', MANAGER)).rejects.toThrow(
+        'not found',
+      );
       expect(notFoundSpy).toHaveBeenCalled();
+    });
+
+    it('lève une 403 pour un rôle inconnu', async () => {
+      const inconnu = { ...MANAGER, role: 'inconnu' as unknown as Roles };
+
+      await expect(service.findOne('postuler-1', inconnu)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
   });
 
@@ -155,13 +186,15 @@ describe('PostulerService', () => {
     it('retourne les candidatures pour une offre', async () => {
       repository.find.mockResolvedValue([mockPostuler]);
 
-      const result = await service.findByOffre('offre-1');
+      const result = await service.findByOffre('offre-1', MANAGER);
 
-      expect(repository.find).toHaveBeenCalledWith({
-        where: { offreId: 'offre-1' },
-        relations: { etudiant: true },
-        order: { date_candidature: 'DESC' },
-      });
+      expect(repository.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ offreId: 'offre-1' }) as object,
+          relations: { etudiant: { user: true } },
+          order: { date_candidature: 'DESC' },
+        }),
+      );
       expect(result).toEqual([mockPostuler]);
     });
   });
@@ -170,13 +203,17 @@ describe('PostulerService', () => {
     it("retourne les candidatures d'un étudiant", async () => {
       repository.find.mockResolvedValue([mockPostuler]);
 
-      const result = await service.findByEtudiant('etudiant-1');
+      const result = await service.findByEtudiant('etudiant-1', MANAGER);
 
-      expect(repository.find).toHaveBeenCalledWith({
-        where: { etudiantId: 'etudiant-1' },
-        relations: { offre: true },
-        order: { date_candidature: 'DESC' },
-      });
+      expect(repository.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            etudiantId: 'etudiant-1',
+          }) as object,
+          relations: { offre: { company: true } },
+          order: { date_candidature: 'DESC' },
+        }),
+      );
       expect(result).toEqual([mockPostuler]);
     });
   });
@@ -251,6 +288,19 @@ describe('PostulerService', () => {
       };
       await service.updateStatut('postuler-1', dto, currentUser);
 
+      expect(notificationService.create).not.toHaveBeenCalled();
+    });
+
+    it('refuse (403) un rôle inconnu sans rien sauvegarder', async () => {
+      const inconnu = { ...MANAGER, role: 'inconnu' as unknown as Roles };
+      const dto: UpdatePostulerStatutDto = {
+        statut: StatutCandidature.ACCEPTEE,
+      };
+
+      await expect(
+        service.updateStatut('postuler-1', dto, inconnu),
+      ).rejects.toThrow(ForbiddenException);
+      expect(repository.save).not.toHaveBeenCalled();
       expect(notificationService.create).not.toHaveBeenCalled();
     });
   });

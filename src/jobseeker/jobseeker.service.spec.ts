@@ -16,7 +16,14 @@ const anyDate: unknown = expect.any(Date);
 type UpdateValues = Record<string, unknown>;
 
 function makeManager() {
+  // Repository Etudiant renvoyé par manager.getRepository(Etudiant) :
+  // c'est lui qui résout l'id étudiant à partir du userId (getStudentId).
+  const etudiantRepo = {
+    findOne: jest.fn().mockResolvedValue({ id: STUDENT_ID }),
+  };
   return {
+    etudiantRepo,
+    getRepository: jest.fn().mockReturnValue(etudiantRepo),
     findOne: jest.fn(),
     findOneOrFail: jest.fn(),
     create: jest.fn((_entity: unknown, data: object) => ({ ...data })),
@@ -40,7 +47,7 @@ function makeJobseeker(overrides: Partial<Jobseeker> = {}): Jobseeker {
 describe('JobseekerService', () => {
   let service: JobseekerService;
   let manager: ReturnType<typeof makeManager>;
-  let dataSource: { transaction: jest.Mock };
+  let dataSource: { transaction: jest.Mock; manager: unknown };
   let jobseekerRepo: { findOne: jest.Mock; findAndCount: jest.Mock };
 
   /** Simule les deux findOne du service : l'étudiant, puis la ligne jobseeker. */
@@ -63,6 +70,8 @@ describe('JobseekerService', () => {
     jobseekerRepo = { findOne: jest.fn(), findAndCount: jest.fn() };
     dataSource = {
       transaction: jest.fn((cb: (m: unknown) => unknown) => cb(manager)),
+      // utilisé par getStudentId quand aucun manager n'est fourni
+      manager,
     };
 
     const moduleRef = await Test.createTestingModule({
@@ -220,11 +229,28 @@ describe('JobseekerService', () => {
     it('exécute activerDans dans une transaction', async () => {
       givenFindOne({ jobseeker: null });
 
-      const result = await service.activer(STUDENT_ID, { poste: 'DSI' }, USER);
+      const result = await service.activer(USER, { poste: 'DSI' });
 
       expect(dataSource.transaction).toHaveBeenCalledTimes(1);
+      // l'id étudiant est résolu depuis le userId du token
+      expect(manager.getRepository).toHaveBeenCalledWith(Etudiant);
+      expect(manager.etudiantRepo.findOne).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { userId: USER.id } }),
+      );
       expect(manager.save).toHaveBeenCalledTimes(1);
       expect(result).toEqual(expect.objectContaining({ poste: 'DSI' }));
+    });
+
+    it("échoue sans rien écrire si l'utilisateur n'a pas de profil étudiant", async () => {
+      manager.etudiantRepo.findOne.mockResolvedValue(null);
+      givenFindOne({ jobseeker: null });
+
+      // type d'exception volontairement non précisé : à adapter à
+      // ce que getStudentId lève réellement (NotFound / Forbidden).
+      await expect(service.activer(USER, { poste: 'DSI' })).rejects.toThrow();
+
+      expect(manager.update).not.toHaveBeenCalled();
+      expect(manager.save).not.toHaveBeenCalled();
     });
   });
 
@@ -272,9 +298,10 @@ describe('JobseekerService', () => {
     it('exécute desactiverDans dans une transaction', async () => {
       givenFindOne({});
 
-      await service.desactiver(STUDENT_ID, USER);
+      await service.desactiver(USER);
 
       expect(dataSource.transaction).toHaveBeenCalledTimes(1);
+      expect(manager.getRepository).toHaveBeenCalledWith(Etudiant);
       expect(manager.update).toHaveBeenCalledTimes(2);
     });
   });
@@ -320,7 +347,7 @@ describe('JobseekerService', () => {
         },
       ];
       expect(options.where.statut._type).toBe('not');
-      expect(options.relations).toEqual({ etudiant: true });
+      expect(options.relations).toEqual({ etudiant: { user: true } });
       expect(options.order).toEqual({ dte_creation: 'DESC' });
       expect(options.skip).toBe(10);
       expect(options.take).toBe(10);

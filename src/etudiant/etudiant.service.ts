@@ -153,7 +153,7 @@ class EtudiantService {
   async findOne(id: string): Promise<Etudiant> {
     const etudiant = await this.etudiantRepo.findOne({
       where: { id },
-      relations: { user: true },
+      relations: { user: true, jobseeker: true },
     });
     if (!etudiant)
       ExceptionFactory.notFound('Etudiant', `Etudiant #${id} introuvable`);
