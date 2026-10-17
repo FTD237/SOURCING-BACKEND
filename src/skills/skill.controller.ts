@@ -42,7 +42,7 @@ export class SkillController {
     description: 'Skill déjà existant',
   })
   @ApiBearerAuth('JWT-auth')
-  @Roles(RolesEnum.ETUDIANT, RolesEnum.MANAGER, RolesEnum.RH)
+  @Roles(RolesEnum.ETUDIANT, RolesEnum.MANAGER, RolesEnum.RH, RolesEnum.ADMIN)
   create(
     @Body() dto: CreateSkillDto,
     @GetUser() currentUser: { id: string; email: string },
@@ -54,7 +54,7 @@ export class SkillController {
   @ApiOperation({ summary: 'Lister tous les skills' })
   @ApiResponse({ status: HttpStatus.OK, type: [Skill] })
   @ApiBearerAuth('JWT-auth')
-  @Roles(RolesEnum.ETUDIANT, RolesEnum.MANAGER, RolesEnum.RH)
+  @Roles(RolesEnum.ETUDIANT, RolesEnum.MANAGER, RolesEnum.RH, RolesEnum.ADMIN)
   findAll() {
     return this.skillService.findAll();
   }
@@ -68,6 +68,7 @@ export class SkillController {
     description: 'Skill introuvable',
   })
   @ApiBearerAuth('JWT-auth')
+  @Roles(RolesEnum.ETUDIANT, RolesEnum.MANAGER, RolesEnum.RH, RolesEnum.ADMIN)
   findOne(@Param('id') id: string) {
     return this.skillService.findOne(id);
   }
@@ -81,6 +82,7 @@ export class SkillController {
     description: 'Skill introuvable',
   })
   @ApiBearerAuth('JWT-auth')
+  @Roles(RolesEnum.MANAGER, RolesEnum.ADMIN)
   update(
     @Param('id') id: string,
     @Body() dto: UpdateSkillDto,
@@ -99,6 +101,7 @@ export class SkillController {
     description: 'Skill introuvable',
   })
   @ApiBearerAuth('JWT-auth')
+  @Roles(RolesEnum.MANAGER, RolesEnum.ADMIN)
   remove(
     @Param('id') id: string,
     @GetUser() currentUser: { id: string; email: string },

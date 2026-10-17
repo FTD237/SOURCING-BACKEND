@@ -154,12 +154,12 @@ export class PostulerService {
       case StatutCandidature.ACCEPTEE:
         notificationType = NotificationType.CANDIDATURE_ACCEPTEE;
         titre = 'Candidature acceptée';
-        message = `Votre candidature pour "${postuler.offre?.descriptions}" a été acceptée.`;
+        message = `Votre candidature pour "${postuler.offre?.titre}" a été acceptée.`;
         break;
       case StatutCandidature.REFUSEE:
         notificationType = NotificationType.CANDIDATURE_REFUSEE;
         titre = 'Candidature refusée';
-        message = `Votre candidature pour "${postuler.offre?.descriptions}" a été refusée.`;
+        message = `Votre candidature pour "${postuler.offre?.titre}" a été refusée.`;
         break;
       default:
         return; // EN_ATTENTE ou autre statut : pas de notification

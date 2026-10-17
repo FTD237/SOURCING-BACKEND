@@ -9,6 +9,7 @@ import {
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
+  ApiOkResponse,
   ApiOperation,
   ApiParam,
   ApiResponse,
@@ -22,6 +23,7 @@ import { PaginationDto } from '../common/pagination';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { GetUser } from '../auth/get-user.decorator';
 import { ApiReponsePaginee } from '../common/swagger';
+import { NotificationType } from '../common/enum/notification-type.enum';
 
 @ApiTags('notifications')
 @ApiBearerAuth()
@@ -72,12 +74,30 @@ export class NotificationController {
   @Get('preferences')
   @ApiOperation({
     summary: "Récupère les préférences de notification de l'utilisateur",
+    description:
+      'Retourne, pour chaque type de notification, si elle est activée. ' +
+      "Un type que l'utilisateur n'a jamais configuré est actif par défaut.",
   })
-  @ApiResponse({
-    status: 200,
-    description: 'Préférences de notification',
-    type: NotificationPreference,
-    isArray: true,
+  @ApiOkResponse({
+    description:
+      'Préférences de notification, indexées par type (true = activée)',
+    schema: {
+      type: 'object',
+      properties: Object.fromEntries(
+        Object.values(NotificationType).map((type) => [
+          type,
+          { type: 'boolean' },
+        ]),
+      ),
+      required: Object.values(NotificationType),
+      example: {
+        NOUVELLE_OFFRE: true,
+        CANDIDATURE_RECUE: true,
+        CANDIDATURE_ACCEPTEE: true,
+        CANDIDATURE_REFUSEE: true,
+        RAPPEL: false,
+      },
+    },
   })
   getPreferences(@GetUser() currentUser: { id: string }) {
     return this.notificationService.getPreferencesForUser(currentUser.id);

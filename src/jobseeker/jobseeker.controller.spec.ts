@@ -55,13 +55,13 @@ describe('JobseekerController', () => {
   });
 
   describe('findMine', () => {
-    it("utilise l'étudiant de l'utilisateur connecté", async () => {
+    it("passe l'id de l'utilisateur connecté (le service retrouve l'étudiant)", async () => {
       const jobseeker = { id: 'js-1', studentId: USER.etudiantId };
       service.findByStudent.mockResolvedValue(jobseeker);
 
       const result = await controller.findMine(USER);
 
-      expect(service.findByStudent).toHaveBeenCalledWith(USER.etudiantId);
+      expect(service.findByStudent).toHaveBeenCalledWith(USER.id);
       expect(result).toBe(jobseeker);
     });
 

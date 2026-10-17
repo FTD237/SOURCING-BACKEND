@@ -1,16 +1,24 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiPropertyOptional } from '@nestjs/swagger';
+import { IsOptional } from 'class-validator';
 import { IsValidUrl } from '../../common/validators/is-valid-url.validator';
 
+/**
+ * Tous les liens sont optionnels : on ne valide que ceux qui sont envoyés.
+ * (@IsOptional ignore la validation quand la valeur est undefined ou null.)
+ */
 export class LiensUtilesDto {
-  @ApiProperty({ example: 'https://github.com' })
+  @ApiPropertyOptional({ example: 'https://github.com' })
+  @IsOptional()
   @IsValidUrl()
-  github: string;
+  github?: string;
 
-  @ApiProperty({ example: 'https://linkedn.com' })
+  @ApiPropertyOptional({ example: 'https://linkedin.com' })
+  @IsOptional()
   @IsValidUrl()
-  linkedin: string;
+  linkedin?: string;
 
-  @ApiProperty({ example: 'https://mon-portfolio.com' })
+  @ApiPropertyOptional({ example: 'https://mon-portfolio.com' })
+  @IsOptional()
   @IsValidUrl()
-  portfolio: string;
+  portfolio?: string;
 }
