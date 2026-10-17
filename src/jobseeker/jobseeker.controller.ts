@@ -33,10 +33,8 @@ import { UpsertJobseekerDto } from './dto/upsert-jobseeker.dto';
 import { JobseekerPaginateDto } from './dto/jobseeker-paginate.dto';
 import { Jobseeker } from './jobseeker.entity';
 
-// `etudiantId` : à adapter à ce que renvoie ton GetUser
 interface UtilisateurCourant {
   id: string;
-  etudiantId: string;
 }
 
 @ApiTags('Jobseekers')
@@ -48,7 +46,7 @@ export class JobseekerController {
   constructor(private readonly jobseekerService: JobseekerService) {}
 
   @Get()
-  @Roles(RolesEnum.RH, RolesEnum.MANAGER)
+  @Roles(RolesEnum.RH, RolesEnum.MANAGER, RolesEnum.ADMIN)
   @ApiOperation({
     summary: "Lister les étudiants en recherche d'emploi",
     description: 'Résultat paginé. Les profils désactivés sont exclus.',
@@ -64,11 +62,11 @@ export class JobseekerController {
   @ApiOkResponse({ type: Jobseeker })
   @ApiNotFoundResponse({ description: "Vous n'êtes pas en recherche d'emploi" })
   findMine(@GetUser() user: UtilisateurCourant) {
-    return this.jobseekerService.findByStudent(user.etudiantId);
+    return this.jobseekerService.findByStudent(user.id);
   }
 
   @Get('etudiant/:studentId')
-  @Roles(RolesEnum.RH, RolesEnum.MANAGER)
+  @Roles(RolesEnum.RH, RolesEnum.MANAGER, RolesEnum.ADMIN)
   @ApiOperation({ summary: "Consulter le profil d'un jobseeker" })
   @ApiOkResponse({ type: Jobseeker })
   @ApiNotFoundResponse({ description: 'Pas de jobseeker ayant cet id' })

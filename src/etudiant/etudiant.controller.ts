@@ -8,6 +8,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import EtudiantService from './etudiant.service';
@@ -33,6 +34,9 @@ import {
   ApiUuidParam,
 } from '../decorators/api-common-response.decorator';
 import { Roles } from '../decorators/roles.decorator';
+import { PaginationDto, ResultatPagine } from '../common/pagination';
+// ⚠️ adapte ce chemin au dossier qui contient ton index Swagger
+import { ApiReponsePaginee } from '../common/swagger';
 
 /**
  * Gère le cycle de vie des étudiants (création, consultation, mise à jour,
@@ -81,27 +85,28 @@ export class EtudiantController {
   }
 
   /**
-   * Liste tous les étudiants.
+   * Liste les étudiants, page par page (du plus récent au plus ancien).
    *
-   * @returns La liste complète des étudiants.
+   * @param pagination - Paramètres de pagination (`page`, `limite`).
+   * @returns Une page d'étudiants (`donnees`) et ses métadonnées (`meta`).
+   * @throws BadRequestException si les paramètres de pagination sont invalides (400).
    */
   @Get()
   @Roles(RolesEnum.RH, RolesEnum.MANAGER, RolesEnum.ADMIN, RolesEnum.SUPERADMIN)
   @ApiOperation({
-    summary: 'Lister les étudiants',
+    summary: 'Lister les étudiants (paginé)',
     description:
-      'Retourne la liste de tous les étudiants enregistrés. Accessible aux ' +
-      'rôles RH, MANAGER, ADMIN et SUPERADMIN.',
+      'Retourne une page des étudiants enregistrés, triés du plus récent au ' +
+      'plus ancien, avec les métadonnées de pagination (total, nombre de ' +
+      'pages, page suivante/précédente). Accessible aux rôles RH, MANAGER, ' +
+      'ADMIN et SUPERADMIN.',
   })
-  @ApiResponse({
-    status: 200,
-    description: 'Liste des étudiants récupérée avec succès',
-    type: Etudiant,
-    isArray: true,
-  })
-  @ApiCrudErrorResponses()
-  findAll(): Promise<Etudiant[]> {
-    return this.etudiantService.findAll();
+  @ApiReponsePaginee(Etudiant)
+  @ApiCrudErrorResponses({ badRequest: true })
+  findAll(
+    @Query() pagination: PaginationDto,
+  ): Promise<ResultatPagine<Etudiant>> {
+    return this.etudiantService.findAll(pagination);
   }
 
   /**
@@ -139,7 +144,8 @@ export class EtudiantController {
    * Met à jour les informations d'un étudiant.
    *
    * @param id - Identifiant UUID de l'étudiant à modifier.
-   * @param dto - Champs à mettre à jour (partiels).
+   * @param dto - Champs à mettre à jour (partiels). Les liens envoyés sont
+   * fusionnés avec les liens existants.
    * @param currentUser - Utilisateur authentifié à l'origine de la modification
    * (utilisé pour la traçabilité, ex. `updated_by`).
    * @returns L'étudiant mis à jour.
@@ -156,7 +162,9 @@ export class EtudiantController {
   @ApiOperation({
     summary: "Modifier les informations d'un étudiant",
     description:
-      "Met à jour partiellement les informations d'un étudiant existant.",
+      "Met à jour partiellement les informations d'un étudiant existant. " +
+      'Les liens (github, linkedin, portfolio) sont optionnels : seuls ceux ' +
+      'envoyés sont vérifiés et fusionnés avec les liens déjà enregistrés.',
   })
   @ApiUuidParam('id', "UUID de l'étudiant à modifier")
   @ApiBody({ type: UpdateEtudiantDto })

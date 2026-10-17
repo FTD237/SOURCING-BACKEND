@@ -15,6 +15,7 @@ import {
   createServiceMocks,
   ServiceMocks,
 } from '../../test/support/create-service-mocks';
+import { PaginationDto, ResultatPagine } from '../common/pagination';
 
 type CurrentUser = { id: string; email: string };
 
@@ -123,22 +124,46 @@ describe('EtudiantController', () => {
   // findAll()
   // -------------------------------------------------------------------------
   describe('findAll', () => {
-    it('should return all etudiants', async () => {
-      const expectedResult = [mockEtudiant];
-      mocks.findAll.mockResolvedValue(expectedResult as unknown as Etudiant[]);
+    const pagination = { page: 1, limite: 10 } as PaginationDto;
 
-      const result = await controller.findAll();
+    it('should return a page of etudiants', async () => {
+      const expectedResult: ResultatPagine<Etudiant> = {
+        donnees: [mockEtudiant as unknown as Etudiant],
+        meta: {
+          page: 1,
+          limite: 10,
+          total: 1,
+          totalPages: 1,
+          aSuivante: false,
+          aPrecedente: false,
+        },
+      };
+      mocks.findAll.mockResolvedValue(expectedResult);
 
-      expect(mocks.findAll).toHaveBeenCalled();
+      const result = await controller.findAll(pagination);
+
+      expect(mocks.findAll).toHaveBeenCalledWith(pagination);
       expect(result).toEqual(expectedResult);
     });
 
-    it('should return an empty array when no etudiants exist', async () => {
-      mocks.findAll.mockResolvedValue([]);
+    it('should return an empty page when no etudiants exist', async () => {
+      const emptyPage: ResultatPagine<Etudiant> = {
+        donnees: [],
+        meta: {
+          page: 1,
+          limite: 10,
+          total: 0,
+          totalPages: 0,
+          aSuivante: false,
+          aPrecedente: false,
+        },
+      };
+      mocks.findAll.mockResolvedValue(emptyPage);
 
-      const result = await controller.findAll();
+      const result = await controller.findAll(pagination);
 
-      expect(result).toEqual([]);
+      expect(result.donnees).toEqual([]);
+      expect(result.meta.total).toBe(0);
     });
   });
 
