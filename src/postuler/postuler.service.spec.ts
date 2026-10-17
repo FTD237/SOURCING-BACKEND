@@ -221,7 +221,7 @@ describe('PostulerService', () => {
   describe('updateStatut', () => {
     const postulerAvecRelations: Postuler = {
       ...mockPostuler,
-      offre: { descriptions: 'Développeur Backend' },
+      offre: { titre: 'Développeur Backend' },
       etudiant: { userId: 'etudiant-1' },
     } as Postuler;
 

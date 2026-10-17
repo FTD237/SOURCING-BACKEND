@@ -83,7 +83,7 @@ export class PostulerController {
     type: Postuler,
   })
   @ApiResponse({ status: 404, description: 'Candidature introuvable.' })
-  @Roles(RolesEnum.MANAGER, RolesEnum.ETUDIANT, RolesEnum.RH)
+  @Roles(RolesEnum.MANAGER, RolesEnum.ETUDIANT, RolesEnum.RH, RolesEnum.ADMIN)
   findOne(
     @Param('id') id: string,
     @GetUser() currentUser: { id: string; email: string; role: RolesEnum },
@@ -103,7 +103,7 @@ export class PostulerController {
     description: "Candidatures de l'étudiant.",
     type: [Postuler],
   })
-  @Roles(RolesEnum.MANAGER, RolesEnum.ETUDIANT)
+  @Roles(RolesEnum.MANAGER, RolesEnum.ETUDIANT, RolesEnum.ADMIN)
   findByEtudiant(
     @Param('etudiantId') etudiantId: string,
     @GetUser() currentUser: { id: string; email: string; role: RolesEnum },
@@ -123,7 +123,7 @@ export class PostulerController {
     description: "Candidatures reçues pour l'offre.",
     type: [Postuler],
   })
-  @Roles(RolesEnum.MANAGER, RolesEnum.RH)
+  @Roles(RolesEnum.MANAGER, RolesEnum.RH, RolesEnum.ADMIN)
   findByOffre(
     @Param('offreId') offreId: string,
     @GetUser() currentUser: { id: string; email: string; role: RolesEnum },

@@ -18,6 +18,7 @@ import { MailService } from '../mail/mail.service';
 import { Roles } from '../common/enum/roles.enum';
 import { LinkCheckerService } from '../common/services/link-checker.service';
 import { JobseekerService } from '../jobseeker/jobseeker.service';
+import { paginer, PaginationDto, ResultatPagine } from '../common/pagination';
 
 @Injectable()
 class EtudiantService {
@@ -59,6 +60,7 @@ class EtudiantService {
         'Le rôle "etudiant" n\'existe pas. Veuillez le créer avant',
       );
 
+    // Seuls les liens renseignés sont vérifiés (validateLinksOrThrow ignore les vides)
     if (dto.liens) {
       await this.linkCheckerService.validateLinksOrThrow(dto.liens);
     }
@@ -99,6 +101,9 @@ class EtudiantService {
         statut: Statut.ACTIF,
         create_by: createdBy,
         dte_creation: new Date(),
+        bio: dto.bio,
+        liens: dto.liens,
+        avatar_id: dto.avatar_id,
       });
 
       savedEtudiant = await queryRunner.manager.save(etudiant);
@@ -146,8 +151,17 @@ class EtudiantService {
     };
   }
 
-  async findAll(): Promise<Etudiant[]> {
-    return this.etudiantRepo.find({ relations: { user: true } });
+  async findAll(pagination: PaginationDto): Promise<ResultatPagine<Etudiant>> {
+    const { page, limite } = pagination;
+
+    const resultat = await this.etudiantRepo.findAndCount({
+      relations: { user: true, jobseeker: true },
+      order: { dte_creation: 'DESC' },
+      skip: (page - 1) * limite,
+      take: limite,
+    });
+
+    return paginer(resultat, pagination);
   }
 
   async findOne(id: string): Promise<Etudiant> {
@@ -171,12 +185,22 @@ class EtudiantService {
     });
     if (!etudiant) ExceptionFactory.notFound(`Etudiant`, id);
 
-    if (dto.liens)
-      await this.linkCheckerService.validateLinksOrThrow(dto.liens);
-
     // is_job_seeker et jobseeker sortent de l'update générique :
-    // c'est JobseekerService qui écrit le flag, pour qu'il reste cohérent avec la table
-    const { nom, prenom, is_job_seeker, jobseeker, ...etudiantFields } = dto;
+    // c'est JobseekerService qui écrit le flag, pour qu'il reste cohérent avec la table.
+    // liens en sort aussi : on écrit la version fusionnée, pas celle du dto
+    // (sinon un lien seul écraserait les autres).
+    const { nom, prenom, is_job_seeker, jobseeker, liens, ...etudiantFields } =
+      dto;
+
+    let liensFusionnes: Etudiant['liens'] | undefined;
+    if (liens) {
+      const envoyes = Object.fromEntries(
+        Object.entries(liens).filter(([, v]) => v !== undefined),
+      );
+      // on ne vérifie que les liens envoyés, pas ceux déjà en base
+      await this.linkCheckerService.validateLinksOrThrow(envoyes);
+      liensFusionnes = { ...etudiant.liens, ...envoyes };
+    }
 
     await this.dataSource.transaction(async (manager) => {
       if (nom || prenom) {
@@ -188,6 +212,7 @@ class EtudiantService {
 
       await manager.update(Etudiant, id, {
         ...etudiantFields,
+        ...(liensFusionnes && { liens: liensFusionnes }),
         updated_by: currentUser.id,
         dte_modif: new Date(),
       });

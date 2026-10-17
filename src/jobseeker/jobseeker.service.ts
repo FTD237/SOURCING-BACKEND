@@ -146,9 +146,9 @@ export class JobseekerService {
     );
   }
 
-  async findByStudent(studentId: string): Promise<Jobseeker> {
-    if (!studentId) ExceptionFactory.badRequest('studentId requis');
-
+  async findByStudent(userId: string): Promise<Jobseeker> {
+    if (!userId) ExceptionFactory.badRequest('id utilisateur nécessaire');
+    const studentId = await this.getStudentId(userId);
     const jobseeker = await this.jobseekerRepo.findOne({
       where: { studentId, statut: Not(Statut.SUPPRIME) },
       relations: { etudiant: { user: true } },

@@ -14,17 +14,20 @@ import { MailService } from '../mail/mail.service';
 import { NotFoundException } from '@nestjs/common';
 import { LinkCheckerService } from '../common/services/link-checker.service';
 import { JobseekerService } from '../jobseeker/jobseeker.service';
+import { PaginationDto } from '../common/pagination';
 
 describe('EtudiantService', () => {
   let service: EtudiantService;
 
   const mockSave = jest.fn();
   const mockFind = jest.fn();
+  const mockFindAndCount = jest.fn();
   const mockFindOne = jest.fn();
   const mockUpdate = jest.fn();
 
   const mockEtudiantRepo = {
     find: mockFind,
+    findAndCount: mockFindAndCount,
     findOne: mockFindOne,
     save: mockSave,
     update: mockUpdate,
@@ -112,11 +115,24 @@ describe('EtudiantService', () => {
     return etudiant;
   }
 
+  /** Valeurs passées au manager.update(Etudiant, ...) dans la transaction. */
+  function etudiantUpdateValues(): Record<string, unknown> {
+    const call = mockManager.update.mock.calls.find(
+      ([entity]) => entity === Etudiant,
+    ) as [unknown, unknown, Record<string, unknown>];
+    return call[2];
+  }
+
   beforeEach(async () => {
     // Évite qu'une valeur "once" non consommée dans un test fuite dans le suivant
     mockFindOne.mockReset();
+    mockFindAndCount.mockReset();
     mockJobseekerService.activerDans.mockReset();
     mockJobseekerService.desactiverDans.mockReset();
+    // Un test précédent peut avoir laissé un mockRejectedValue : on repart propre
+    mockLinkCheckerService.validateLinksOrThrow
+      .mockReset()
+      .mockResolvedValue(undefined);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -181,6 +197,26 @@ describe('EtudiantService', () => {
       });
     });
 
+    it('enregistre bio, liens et avatar à la création', async () => {
+      setupSuccessfulCreationMocks();
+      mockMailService.sendAccountActivationMail.mockResolvedValue(undefined);
+      const liens = { github: 'https://github.com/johndoe' };
+
+      await service.create(
+        { ...dto, bio: 'Dev backend', liens, avatar_id: 'avatar-1' },
+        currentUser,
+      );
+
+      expect(mockQueryRunnerManager.create).toHaveBeenCalledWith(
+        Etudiant,
+        expect.objectContaining({
+          bio: 'Dev backend',
+          liens,
+          avatar_id: 'avatar-1',
+        }),
+      );
+    });
+
     it("devrait lever une exception si l'email existe déjà", async () => {
       mockUserRepo.findOne.mockResolvedValue(mockUser);
 
@@ -221,6 +257,7 @@ describe('EtudiantService', () => {
 
       expect(result).toEqual({ user: mockUser, etudiant: mockEtudiant });
     });
+
     describe('create — validation des liens', () => {
       it('devrait appeler validateLinksOrThrow si dto.liens est fourni', async () => {
         setupSuccessfulCreationMocks();
@@ -341,14 +378,59 @@ describe('EtudiantService', () => {
       });
     });
   });
+
   describe('findAll', () => {
-    it('devrait retourner tous les étudiants', async () => {
-      mockFind.mockResolvedValue([mockEtudiant]);
+    it('pagine les étudiants avec leurs relations', async () => {
+      mockFindAndCount.mockResolvedValue([[mockEtudiant], 25]);
+      const pagination = { page: 2, limite: 10 } as PaginationDto;
 
-      const result = await service.findAll();
+      const result = await service.findAll(pagination);
 
-      expect(mockFind).toHaveBeenCalledWith({ relations: { user: true } });
-      expect(result).toEqual([mockEtudiant]);
+      expect(mockFindAndCount).toHaveBeenCalledWith({
+        relations: { user: true, jobseeker: true },
+        order: { dte_creation: 'DESC' },
+        skip: 10,
+        take: 10,
+      });
+      expect(result.donnees).toEqual([mockEtudiant]);
+      expect(result.meta).toEqual({
+        page: 2,
+        limite: 10,
+        total: 25,
+        totalPages: 3,
+        aSuivante: true,
+        aPrecedente: true,
+      });
+    });
+
+    it('commence à 0 sur la première page', async () => {
+      mockFindAndCount.mockResolvedValue([[mockEtudiant], 1]);
+
+      const result = await service.findAll({
+        page: 1,
+        limite: 10,
+      } as PaginationDto);
+
+      expect(mockFindAndCount).toHaveBeenCalledWith(
+        expect.objectContaining({ skip: 0, take: 10 }),
+      );
+      expect(result.meta).toEqual(
+        expect.objectContaining({ aSuivante: false, aPrecedente: false }),
+      );
+    });
+
+    it('renvoie une page vide quand il n’y a aucun étudiant', async () => {
+      mockFindAndCount.mockResolvedValue([[], 0]);
+
+      const result = await service.findAll({
+        page: 1,
+        limite: 10,
+      } as PaginationDto);
+
+      expect(result.donnees).toEqual([]);
+      expect(result.meta).toEqual(
+        expect.objectContaining({ total: 0, totalPages: 0 }),
+      );
     });
   });
 
@@ -419,6 +501,132 @@ describe('EtudiantService', () => {
 
       expect(mockManager.update).toHaveBeenCalledWith(User, mockUser.id, {
         nom: 'Nouveau',
+      });
+    });
+
+    describe('update — liens', () => {
+      it('fusionne un lien seul avec les liens existants', async () => {
+        givenEtudiant({
+          liens: {
+            linkedin: 'https://linkedin.com/in/marie',
+            portfolio: 'https://marie.dev',
+          },
+        });
+
+        await service.update(
+          'etu-1',
+          { liens: { github: 'https://github.com/marie-bella' } },
+          currentUser,
+        );
+
+        expect(etudiantUpdateValues().liens).toEqual({
+          linkedin: 'https://linkedin.com/in/marie',
+          portfolio: 'https://marie.dev',
+          github: 'https://github.com/marie-bella',
+        });
+      });
+
+      it('remplace uniquement le lien envoyé', async () => {
+        givenEtudiant({
+          liens: {
+            github: 'https://github.com/ancien',
+            linkedin: 'https://linkedin.com/in/marie',
+          },
+        });
+
+        await service.update(
+          'etu-1',
+          { liens: { github: 'https://github.com/nouveau' } },
+          currentUser,
+        );
+
+        expect(etudiantUpdateValues().liens).toEqual({
+          github: 'https://github.com/nouveau',
+          linkedin: 'https://linkedin.com/in/marie',
+        });
+      });
+
+      it("fonctionne quand l'étudiant n'a encore aucun lien", async () => {
+        givenEtudiant({ liens: undefined });
+
+        await service.update(
+          'etu-1',
+          { liens: { github: 'https://github.com/marie-bella' } },
+          currentUser,
+        );
+
+        expect(etudiantUpdateValues().liens).toEqual({
+          github: 'https://github.com/marie-bella',
+        });
+      });
+
+      it('ne vérifie que les liens envoyés, pas ceux déjà en base', async () => {
+        givenEtudiant({
+          liens: {
+            linkedin: 'https://linkedin.com/in/marie',
+          },
+        });
+
+        await service.update(
+          'etu-1',
+          { liens: { github: 'https://github.com/marie-bella' } },
+          currentUser,
+        );
+
+        expect(
+          mockLinkCheckerService.validateLinksOrThrow,
+        ).toHaveBeenCalledWith({ github: 'https://github.com/marie-bella' });
+      });
+
+      it('ignore les liens undefined', async () => {
+        givenEtudiant({
+          liens: {
+            linkedin: 'https://linkedin.com/in/marie',
+          },
+        });
+
+        await service.update(
+          'etu-1',
+          { liens: { github: undefined, portfolio: 'https://marie.dev' } },
+          currentUser,
+        );
+
+        expect(
+          mockLinkCheckerService.validateLinksOrThrow,
+        ).toHaveBeenCalledWith({ portfolio: 'https://marie.dev' });
+        expect(etudiantUpdateValues().liens).toEqual({
+          linkedin: 'https://linkedin.com/in/marie',
+          portfolio: 'https://marie.dev',
+        });
+      });
+
+      it("n'écrit pas liens et ne vérifie rien quand le dto n'en contient pas", async () => {
+        givenEtudiant();
+
+        await service.update('etu-1', { bio: 'Nouvelle bio' }, currentUser);
+
+        expect(
+          mockLinkCheckerService.validateLinksOrThrow,
+        ).not.toHaveBeenCalled();
+        expect(etudiantUpdateValues()).not.toHaveProperty('liens');
+      });
+
+      it('rejette la mise à jour si un lien est inaccessible, sans ouvrir de transaction', async () => {
+        givenEtudiant();
+        mockLinkCheckerService.validateLinksOrThrow.mockRejectedValue(
+          new Error('Lien(s) inaccessible(s) : github (https://site-down.com)'),
+        );
+
+        await expect(
+          service.update(
+            'etu-1',
+            { liens: { github: 'https://site-down.com' } },
+            currentUser,
+          ),
+        ).rejects.toThrow('Lien(s) inaccessible(s)');
+
+        expect(mockDataSource.transaction).not.toHaveBeenCalled();
+        expect(mockManager.update).not.toHaveBeenCalled();
       });
     });
 

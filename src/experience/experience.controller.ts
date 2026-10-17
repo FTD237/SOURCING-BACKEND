@@ -86,7 +86,13 @@ export class ExperienceController {
    * @returns La liste complète des expériences.
    */
   @Get()
-  @Roles(RolesEnum.RH, RolesEnum.MANAGER, RolesEnum.ADMIN, RolesEnum.SUPERADMIN)
+  @Roles(
+    RolesEnum.RH,
+    RolesEnum.MANAGER,
+    RolesEnum.ADMIN,
+    RolesEnum.SUPERADMIN,
+    RolesEnum.ETUDIANT,
+  )
   @ApiOperation({
     summary: 'Lister les expériences',
     description:
@@ -145,7 +151,13 @@ export class ExperienceController {
    * @throws NotFoundException si aucune expérience ne correspond à `id` (404).
    */
   @Get(':id')
-  @Roles(RolesEnum.RH, RolesEnum.MANAGER, RolesEnum.ADMIN, RolesEnum.SUPERADMIN)
+  @Roles(
+    RolesEnum.RH,
+    RolesEnum.MANAGER,
+    RolesEnum.ADMIN,
+    RolesEnum.SUPERADMIN,
+    RolesEnum.ETUDIANT,
+  )
   @ApiOperation({
     summary: 'Récupérer une expérience par son id',
     description:
