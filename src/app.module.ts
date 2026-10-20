@@ -19,6 +19,7 @@ import { EtudiantSkillModule } from './etudiant-skill/etudiant-skill.module';
 import { NotificationModule } from './notifications/notification.module';
 import { buildDatabaseOptions, getAppEnv } from './config/database.config';
 import { EvaluationModule } from './evaluation/evaluation.module';
+import { StatisticsModule } from './statistics/statistics.module';
 
 @Module({
   imports: [
@@ -71,6 +72,7 @@ import { EvaluationModule } from './evaluation/evaluation.module';
     EtudiantSkillModule,
     NotificationModule,
     EvaluationModule,
+    StatisticsModule,
   ],
 })
 export class AppModule {}
