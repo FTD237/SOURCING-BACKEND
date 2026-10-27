@@ -1,3 +1,4 @@
+// test/unit/company/company.controller.spec.ts
 import { Test, TestingModule } from '@nestjs/testing';
 import { CompanyController } from './company.controller';
 import { CompanyService } from './company.service';
@@ -6,12 +7,15 @@ import {
   CreateCompanyResponseDto,
   UpdateCompanyDto,
 } from './dto/company.dto';
+import { RechercheCompanyDto } from './dto/recherche.company.dto';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { RolesGuard } from '../guards/roles.guard';
 import { User } from '../user/user.entity';
 import Company from './company.entity';
 import { Statut } from '../common/enum/statut.enum';
 import { RecruitmentStatusEnum } from '../common/enum/recruitment-status.enum';
+import { Roles as RolesEnum } from '../common/enum/roles.enum';
+import { ResultatPagine } from '../common/pagination';
 
 describe('CompanyController', () => {
   let controller: CompanyController;
@@ -20,6 +24,7 @@ describe('CompanyController', () => {
     id: 'user-1',
     name: 'Admin User',
     email: 'admin@test.com',
+    role: RolesEnum.ADMIN,
   };
 
   const mockCreateDto: CreateCompanyDto = {
@@ -28,8 +33,7 @@ describe('CompanyController', () => {
     email: 'jean@techcorp.com',
     country_code: 'FR',
     company_name: 'techCorp',
-    company_description:
-      'techcorp machin blablabla bref ça ser seulement au test de toute façon personne ne lis ça',
+    company_description: 'Description de test',
     contact_person: 'Sergine',
     contact_phone: 677789090,
     recruitment_status: RecruitmentStatusEnum.RECRUITING,
@@ -74,8 +78,19 @@ describe('CompanyController', () => {
     user: mockUser,
   };
 
-  // ✅ Typé directement depuis la signature réelle du service.
-  // Un seul paramètre de type générique par déclaration -> pas d'ambiguïté de parsing.
+  // ✅ Mock du résultat paginé pour findAll
+  const mockPaginatedResult: ResultatPagine<Company> = {
+    donnees: [mockCompanyWithUser as Company],
+    meta: {
+      total: 1,
+      page: 1,
+      limite: 10,
+      totalPages: 1,
+      aSuivante: false,
+      aPrecedente: false,
+    },
+  };
+
   let mockCreate: jest.MockedFunction<CompanyService['create']>;
   let mockFindAll: jest.MockedFunction<CompanyService['findAll']>;
   let mockFindOne: jest.MockedFunction<CompanyService['findOne']>;
@@ -154,25 +169,116 @@ describe('CompanyController', () => {
   });
 
   // -------------------------------------------------------------------------
-  // findAll()
+  // findAll() — ✅ Nouvelle signature avec filtre + pagination
   // -------------------------------------------------------------------------
   describe('findAll', () => {
-    it('should return all companies', async () => {
-      const expectedResult = [mockCompanyWithUser];
-      mockFindAll.mockResolvedValue(expectedResult as unknown as Company[]);
+    it('should return paginated companies', async () => {
+      // Arrange
+      const filtre: RechercheCompanyDto = {
+        ordre: 'DESC',
+        get sauter(): number {
+          return 0;
+        },
+        page: 1,
+        limite: 10,
+      };
+      mockFindAll.mockResolvedValue(mockPaginatedResult);
 
-      const result = await controller.findAll();
+      // Act
+      const result = await controller.findAll(filtre, mockCurrentUser);
 
-      expect(mockFindAll).toHaveBeenCalled();
-      expect(result).toEqual(expectedResult);
+      // Assert
+      expect(mockFindAll).toHaveBeenCalledWith(filtre, mockCurrentUser);
+      expect(result).toEqual(mockPaginatedResult);
+      expect(result.donnees).toHaveLength(1);
+      expect(result.meta.total).toBe(1);
     });
 
-    it('should return empty array when no companies exist', async () => {
-      mockFindAll.mockResolvedValue([]);
+    it('should pass all filters to the service', async () => {
+      // Arrange
+      const filtre: RechercheCompanyDto = {
+        ordre: 'DESC',
+        get sauter(): number {
+          return 0;
+        },
+        page: 2,
+        limite: 5,
+        q: 'tech',
+        country_code: 'FR',
+        isPartner: true,
+        recruitment_status: RecruitmentStatusEnum.RECRUITING,
+      };
+      mockFindAll.mockResolvedValue({
+        donnees: [],
+        meta: {
+          total: 0,
+          page: 2,
+          limite: 5,
+          totalPages: 0,
+          aSuivante: false,
+          aPrecedente: false,
+        },
+      });
 
-      const result = await controller.findAll();
+      // Act
+      await controller.findAll(filtre, mockCurrentUser);
 
-      expect(result).toEqual([]);
+      // Assert
+      expect(mockFindAll).toHaveBeenCalledWith(filtre, mockCurrentUser);
+    });
+
+    it('should throw ForbiddenException when non-admin tries to see deleted companies', async () => {
+      // Arrange
+      const filtre: RechercheCompanyDto = {
+        ordre: 'DESC',
+        get sauter(): number {
+          return 0;
+        },
+        page: 1,
+        limite: 10,
+        inclureSupprimes: true,
+      };
+      const regularUser = {
+        id: 'user-2',
+        email: 'user@test.com',
+        role: RolesEnum.ETUDIANT,
+      };
+      mockFindAll.mockRejectedValue(new Error('Forbidden'));
+
+      // Act & Assert
+      await expect(controller.findAll(filtre, regularUser)).rejects.toThrow(
+        'Forbidden',
+      );
+    });
+
+    it('should return empty page when no companies exist', async () => {
+      // Arrange
+      const filtre: RechercheCompanyDto = {
+        ordre: 'ASC',
+        get sauter(): number {
+          return 0;
+        },
+        page: 1,
+        limite: 10,
+      };
+      mockFindAll.mockResolvedValue({
+        donnees: [],
+        meta: {
+          total: 0,
+          page: 1,
+          limite: 10,
+          totalPages: 0,
+          aSuivante: false,
+          aPrecedente: false,
+        },
+      });
+
+      // Act
+      const result = await controller.findAll(filtre, mockCurrentUser);
+
+      // Assert
+      expect(result.donnees).toEqual([]);
+      expect(result.meta.total).toBe(0);
     });
   });
 

@@ -12,7 +12,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ExperienceService } from './experience.service';
-import { CreateExperienceDto, UpdateExperienceDto } from './experience.dto';
+import { CreateExperienceDto, UpdateExperienceDto } from './dto/experience.dto';
 import {
   ApiBearerAuth,
   ApiBody,

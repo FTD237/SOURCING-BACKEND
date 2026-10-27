@@ -3,7 +3,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException } from '@nestjs/common';
 import { ExperienceController } from './experience.controller';
 import { ExperienceService } from './experience.service';
-import { CreateExperienceDto, UpdateExperienceDto } from './experience.dto';
+import { CreateExperienceDto, UpdateExperienceDto } from './dto/experience.dto';
 import { Experience } from './experience.entity';
 import { Statut } from '../common/enum/statut.enum';
 

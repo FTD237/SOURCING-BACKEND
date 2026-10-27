@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { DataSource } from 'typeorm';
+import { Brackets, DataSource } from 'typeorm';
 import EtudiantService from './etudiant.service';
 import { Etudiant } from './etudiant.entity';
 import { User } from '../user/user.entity';
@@ -14,7 +14,8 @@ import { MailService } from '../mail/mail.service';
 import { NotFoundException } from '@nestjs/common';
 import { LinkCheckerService } from '../common/services/link-checker.service';
 import { JobseekerService } from '../jobseeker/jobseeker.service';
-import { PaginationDto } from '../common/pagination';
+import { Roles } from '../common/enum/roles.enum';
+import { RechercheEtudiantDto } from './dto/recherche.etudiant.dto';
 
 describe('EtudiantService', () => {
   let service: EtudiantService;
@@ -31,6 +32,7 @@ describe('EtudiantService', () => {
     findOne: mockFindOne,
     save: mockSave,
     update: mockUpdate,
+    createQueryBuilder: jest.fn(() => qb),
   };
 
   const mockUserRepo = {
@@ -124,6 +126,7 @@ describe('EtudiantService', () => {
   }
 
   beforeEach(async () => {
+    qb.getManyAndCount.mockResolvedValue([[mockEtudiant], 1]);
     // Évite qu'une valeur "once" non consommée dans un test fuite dans le suivant
     mockFindOne.mockReset();
     mockFindAndCount.mockReset();
@@ -378,59 +381,144 @@ describe('EtudiantService', () => {
       });
     });
   });
+  const qb = {
+    leftJoinAndSelect: jest.fn().mockReturnThis(),
+    andWhere: jest.fn().mockReturnThis(),
+    orderBy: jest.fn().mockReturnThis(),
+    skip: jest.fn().mockReturnThis(),
+    take: jest.fn().mockReturnThis(),
+    getManyAndCount: jest.fn(),
+  };
+  const ADMIN = { id: 'a-1', email: 'a@t.cm', role: Roles.ADMIN };
+  const RH = { id: 'rh-1', email: 'rh@t.cm', role: Roles.RH };
+  const base = { page: 1, limite: 10 } as RechercheEtudiantDto;
 
   describe('findAll', () => {
-    it('pagine les étudiants avec leurs relations', async () => {
-      mockFindAndCount.mockResolvedValue([[mockEtudiant], 25]);
-      const pagination = { page: 2, limite: 10 } as PaginationDto;
+    it('exclut les supprimés par défaut', async () => {
+      await service.findAll(base, RH);
 
-      const result = await service.findAll(pagination);
-
-      expect(mockFindAndCount).toHaveBeenCalledWith({
-        relations: { user: true, jobseeker: true },
-        order: { dte_creation: 'DESC' },
-        skip: 10,
-        take: 10,
-      });
-      expect(result.donnees).toEqual([mockEtudiant]);
-      expect(result.meta).toEqual({
-        page: 2,
-        limite: 10,
-        total: 25,
-        totalPages: 3,
-        aSuivante: true,
-        aPrecedente: true,
+      expect(qb.andWhere).toHaveBeenCalledWith('e.statut <> :supprime', {
+        supprime: Statut.SUPPRIME,
       });
     });
 
-    it('commence à 0 sur la première page', async () => {
-      mockFindAndCount.mockResolvedValue([[mockEtudiant], 1]);
+    it('pagine et trie du plus récent au plus ancien', async () => {
+      qb.getManyAndCount.mockResolvedValue([[mockEtudiant], 25]);
 
-      const result = await service.findAll({
-        page: 1,
-        limite: 10,
-      } as PaginationDto);
-
-      expect(mockFindAndCount).toHaveBeenCalledWith(
-        expect.objectContaining({ skip: 0, take: 10 }),
+      const result = await service.findAll(
+        {
+          ...base,
+          page: 2,
+          sauter: 0,
+        },
+        RH,
       );
+
+      expect(qb.orderBy).toHaveBeenCalledWith('e.dte_creation', 'DESC');
+      expect(qb.skip).toHaveBeenCalledWith(10);
+      expect(qb.take).toHaveBeenCalledWith(10);
       expect(result.meta).toEqual(
-        expect.objectContaining({ aSuivante: false, aPrecedente: false }),
+        expect.objectContaining({ total: 25, totalPages: 3, aSuivante: true }),
       );
     });
 
-    it('renvoie une page vide quand il n’y a aucun étudiant', async () => {
-      mockFindAndCount.mockResolvedValue([[], 0]);
-
-      const result = await service.findAll({
-        page: 1,
-        limite: 10,
-      } as PaginationDto);
-
-      expect(result.donnees).toEqual([]);
-      expect(result.meta).toEqual(
-        expect.objectContaining({ total: 0, totalPages: 0 }),
+    it('inclut les supprimés pour un admin', async () => {
+      await service.findAll(
+        {
+          ...base,
+          inclureSupprimes: true,
+          sauter: 0,
+        },
+        ADMIN,
       );
+
+      expect(qb.andWhere).not.toHaveBeenCalledWith(
+        'e.statut <> :supprime',
+        expect.anything(),
+      );
+    });
+
+    it.each([
+      ['inclureSupprimes', { inclureSupprimes: true }],
+      ['statut=SUPPRIME', { statut: Statut.SUPPRIME }],
+    ])('refuse %s à un RH', async (_nom, extra) => {
+      await expect(
+        service.findAll(
+          {
+            ...base,
+            ...extra,
+            sauter: 0,
+          },
+          RH,
+        ),
+      ).rejects.toThrow();
+      expect(qb.getManyAndCount).not.toHaveBeenCalled();
+    });
+
+    it('filtre par nom et prénom sans tenir compte de la casse', async () => {
+      await service.findAll(
+        {
+          ...base,
+          nom: 'Bella',
+          prenom: 'Marie',
+          sauter: 0,
+        },
+        RH,
+      );
+
+      expect(qb.andWhere).toHaveBeenCalledWith(
+        'LOWER(u.nom) LIKE LOWER(:nom)',
+        {
+          nom: '%Bella%',
+        },
+      );
+      expect(qb.andWhere).toHaveBeenCalledWith(
+        'LOWER(u.prenom) LIKE LOWER(:prenom)',
+        { prenom: '%Marie%' },
+      );
+    });
+
+    it('filtre par id', async () => {
+      await service.findAll(
+        {
+          ...base,
+          id: 'etu-1',
+          sauter: 0,
+        },
+        RH,
+      );
+
+      expect(qb.andWhere).toHaveBeenCalledWith('e.id = :id', { id: 'etu-1' });
+    });
+
+    it('échappe les jokers % et _ dans la recherche', async () => {
+      await service.findAll(
+        {
+          ...base,
+          nom: '50%_',
+          sauter: 0,
+        },
+        RH,
+      );
+
+      expect(qb.andWhere).toHaveBeenCalledWith(expect.any(String), {
+        nom: '%50\\%\\_%',
+      });
+    });
+
+    it('la recherche libre q utilise un groupe OU', async () => {
+      await service.findAll(
+        {
+          ...base,
+          q: 'bella',
+          sauter: 0,
+        },
+        RH,
+      );
+
+      expect(qb.andWhere).toHaveBeenCalledWith(expect.any(Brackets), {
+        q: '%bella%',
+      });
     });
   });
 

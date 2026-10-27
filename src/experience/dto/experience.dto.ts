@@ -10,7 +10,7 @@ import {
 } from 'class-validator';
 import { PartialType } from '@nestjs/mapped-types';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Statut } from '../common/enum/statut.enum';
+import { Statut } from '../../common/enum/statut.enum';
 
 export class CreateExperienceDto {
   @ApiProperty({

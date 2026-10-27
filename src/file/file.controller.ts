@@ -23,7 +23,7 @@ import { GetUser } from '../auth/get-user.decorator';
 
 @ApiTags('Files')
 @UseGuards(JwtAuthGuard)
-@Controller('api/files')
+@Controller('files')
 export class FileController {
   constructor(private readonly fileService: FileService) {}
 

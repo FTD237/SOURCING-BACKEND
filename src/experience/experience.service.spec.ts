@@ -5,7 +5,7 @@ import { NotFoundException } from '@nestjs/common';
 import { ExperienceService } from './experience.service';
 import { Experience } from './experience.entity';
 import { Statut } from '../common/enum/statut.enum';
-import { CreateExperienceDto, UpdateExperienceDto } from './experience.dto';
+import { CreateExperienceDto, UpdateExperienceDto } from './dto/experience.dto';
 import { FileEntity } from '../file/file.entity';
 
 describe('ExperienceService', () => {

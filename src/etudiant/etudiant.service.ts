@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import { Brackets, DataSource, Repository, SelectQueryBuilder } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { Etudiant } from './etudiant.entity';
 import {
@@ -18,10 +18,22 @@ import { MailService } from '../mail/mail.service';
 import { Roles } from '../common/enum/roles.enum';
 import { LinkCheckerService } from '../common/services/link-checker.service';
 import { JobseekerService } from '../jobseeker/jobseeker.service';
-import { paginer, PaginationDto, ResultatPagine } from '../common/pagination';
+import { paginer, ResultatPagine } from '../common/pagination';
+import { RechercheEtudiantDto } from './dto/recherche.etudiant.dto';
+
+/** Échappe % et _ pour une recherche "contient" sans jokers involontaires. */
+const contient = (valeur: string): string =>
+  `%${valeur.trim().replace(/[\\%_]/g, '\\$&')}%`; // NOSONAR
 
 @Injectable()
 class EtudiantService {
+  /** Rôles autorisés à consulter les étudiants supprimés. */
+  private static readonly ROLES_VOIR_SUPPRIMES: Roles[] = [
+    Roles.ADMIN,
+    Roles.MANAGER,
+    Roles.SUPERADMIN,
+  ];
+
   constructor(
     @InjectRepository(Etudiant)
     private readonly etudiantRepo: Repository<Etudiant>,
@@ -103,6 +115,11 @@ class EtudiantService {
         dte_creation: new Date(),
         bio: dto.bio,
         liens: dto.liens,
+        tools: dto.tools,
+        nationality: dto.nationality,
+        main_domain: dto.main_domain,
+        phone_number: dto.phone_number,
+        languages: dto.languages,
         avatar_id: dto.avatar_id,
       });
 
@@ -151,17 +168,135 @@ class EtudiantService {
     };
   }
 
-  async findAll(pagination: PaginationDto): Promise<ResultatPagine<Etudiant>> {
-    const { page, limite } = pagination;
+  /**
+   * Liste paginée et filtrable des étudiants.
+   *
+   * - Les étudiants supprimés sont exclus par défaut.
+   * - `inclureSupprimes` ou `statut = SUPPRIME` les révèle, mais seulement
+   *   pour ADMIN, MANAGER et SUPERADMIN (403 sinon).
+   * - Les filtres se combinent (ET) ; `q` cherche dans nom, prénom, email
+   *   et matricule (OU).
+   */
+  async findAll(
+    filtre: RechercheEtudiantDto,
+    currentUser: { id: string; email: string; role: Roles },
+  ): Promise<ResultatPagine<Etudiant>> {
+    const { page, limite } = filtre;
 
-    const resultat = await this.etudiantRepo.findAndCount({
-      relations: { user: true, jobseeker: true },
-      order: { dte_creation: 'DESC' },
-      skip: (page - 1) * limite,
-      take: limite,
-    });
+    this.verifierAccesSupprimes(filtre, currentUser);
 
-    return paginer(resultat, pagination);
+    const qb = this.etudiantRepo
+      .createQueryBuilder('e')
+      .leftJoinAndSelect('e.user', 'u')
+      .leftJoinAndSelect('e.jobseeker', 'j');
+
+    this.appliquerFiltreStatut(qb, filtre);
+    this.appliquerFiltresIdentifiants(qb, filtre);
+    this.appliquerFiltresUser(qb, filtre);
+    this.appliquerFiltresEtudiant(qb, filtre);
+    this.appliquerRechercheLibre(qb, filtre);
+
+    const resultat = await qb
+      .orderBy('e.dte_creation', 'DESC')
+      .skip((page - 1) * limite)
+      .take(limite)
+      .getManyAndCount();
+
+    return paginer(resultat, filtre);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Méthodes privées extraites
+  // ---------------------------------------------------------------------------
+
+  private verifierAccesSupprimes(
+    filtre: RechercheEtudiantDto,
+    currentUser: { role: Roles },
+  ): void {
+    const veutSupprimes =
+      filtre.inclureSupprimes === true || filtre.statut === Statut.SUPPRIME;
+
+    if (
+      veutSupprimes &&
+      !EtudiantService.ROLES_VOIR_SUPPRIMES.includes(currentUser.role)
+    ) {
+      ExceptionFactory.forbidden(
+        'Seuls un admin ou un manager peuvent consulter les étudiants supprimés',
+      );
+    }
+  }
+
+  private appliquerFiltreStatut(
+    qb: SelectQueryBuilder<Etudiant>,
+    filtre: RechercheEtudiantDto,
+  ): void {
+    if (filtre.statut) {
+      qb.andWhere('e.statut = :statut', { statut: filtre.statut });
+    } else if (!filtre.inclureSupprimes) {
+      qb.andWhere('e.statut <> :supprime', { supprime: Statut.SUPPRIME });
+    }
+  }
+
+  private appliquerFiltresIdentifiants(
+    qb: SelectQueryBuilder<Etudiant>,
+    filtre: RechercheEtudiantDto,
+  ): void {
+    if (filtre.id) qb.andWhere('e.id = :id', { id: filtre.id });
+    if (filtre.userId)
+      qb.andWhere('e.userId = :userId', { userId: filtre.userId });
+    if (filtre.promotionId)
+      qb.andWhere('e.promotionId = :promotionId', {
+        promotionId: filtre.promotionId,
+      });
+  }
+
+  private appliquerFiltresUser(
+    qb: SelectQueryBuilder<Etudiant>,
+    filtre: RechercheEtudiantDto,
+  ): void {
+    if (filtre.nom)
+      qb.andWhere('LOWER(u.nom) LIKE LOWER(:nom)', {
+        nom: contient(filtre.nom),
+      });
+    if (filtre.prenom)
+      qb.andWhere('LOWER(u.prenom) LIKE LOWER(:prenom)', {
+        prenom: contient(filtre.prenom),
+      });
+    if (filtre.email)
+      qb.andWhere('LOWER(u.email) LIKE LOWER(:email)', {
+        email: contient(filtre.email),
+      });
+  }
+
+  private appliquerFiltresEtudiant(
+    qb: SelectQueryBuilder<Etudiant>,
+    filtre: RechercheEtudiantDto,
+  ): void {
+    if (filtre.matricule)
+      qb.andWhere('LOWER(e.matricule) LIKE LOWER(:matricule)', {
+        matricule: contient(filtre.matricule),
+      });
+    if (filtre.is_job_seeker !== undefined)
+      qb.andWhere('e.is_job_seeker = :jobseeker', {
+        jobseeker: filtre.is_job_seeker,
+      });
+  }
+
+  private appliquerRechercheLibre(
+    qb: SelectQueryBuilder<Etudiant>,
+    filtre: RechercheEtudiantDto,
+  ): void {
+    if (!filtre.q) return;
+    qb.andWhere(
+      new Brackets((b) =>
+        b
+          .where('LOWER(u.nom) LIKE LOWER(:q)')
+          .orWhere('LOWER(u.prenom) LIKE LOWER(:q)')
+          .orWhere('LOWER(u.email) LIKE LOWER(:q)')
+          .orWhere('LOWER(e.matricule) LIKE LOWER(:q)'),
+      ),
+      { q: contient(filtre.q) },
+    );
   }
 
   async findOne(id: string): Promise<Etudiant> {
@@ -187,7 +322,7 @@ class EtudiantService {
 
     // is_job_seeker et jobseeker sortent de l'update générique :
     // c'est JobseekerService qui écrit le flag, pour qu'il reste cohérent avec la table.
-    // liens en sort aussi : on écrit la version fusionnée, pas celle du dto
+    // Liens en sort aussi : on écrit la version fusionnée, pas celle du dto
     // (sinon un lien seul écraserait les autres).
     const { nom, prenom, is_job_seeker, jobseeker, liens, ...etudiantFields } =
       dto;

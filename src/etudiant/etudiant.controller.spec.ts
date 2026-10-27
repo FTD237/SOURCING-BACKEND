@@ -16,8 +16,9 @@ import {
   ServiceMocks,
 } from '../../test/support/create-service-mocks';
 import { PaginationDto, ResultatPagine } from '../common/pagination';
+import { Roles } from '../common/enum/roles.enum';
 
-type CurrentUser = { id: string; email: string };
+type CurrentUser = { id: string; email: string; role: Roles };
 
 type EtudiantServiceMethods =
   'create' | 'findAll' | 'findOne' | 'update' | 'remove';
@@ -29,6 +30,7 @@ describe('EtudiantController', () => {
   const mockCurrentUser: CurrentUser = {
     id: 'user-1',
     email: 'admin@test.com',
+    role: Roles.ADMIN,
   };
 
   const mockCreateDto: CreateEtudiantDto = {
@@ -140,9 +142,9 @@ describe('EtudiantController', () => {
       };
       mocks.findAll.mockResolvedValue(expectedResult);
 
-      const result = await controller.findAll(pagination);
+      const result = await controller.findAll(pagination, mockCurrentUser);
 
-      expect(mocks.findAll).toHaveBeenCalledWith(pagination);
+      expect(mocks.findAll).toHaveBeenCalledWith(pagination, mockCurrentUser);
       expect(result).toEqual(expectedResult);
     });
 
@@ -160,7 +162,7 @@ describe('EtudiantController', () => {
       };
       mocks.findAll.mockResolvedValue(emptyPage);
 
-      const result = await controller.findAll(pagination);
+      const result = await controller.findAll(pagination, mockCurrentUser);
 
       expect(result.donnees).toEqual([]);
       expect(result.meta.total).toBe(0);

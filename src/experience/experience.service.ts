@@ -2,7 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { Experience } from './experience.entity';
-import { CreateExperienceDto, UpdateExperienceDto } from './experience.dto';
+import { CreateExperienceDto, UpdateExperienceDto } from './dto/experience.dto';
 import { Statut } from '../common/enum/statut.enum';
 import { FileEntity } from '../file/file.entity';
 import { ExceptionFactory } from '../common/exceptions/exception-factory';
@@ -22,7 +22,7 @@ export class ExperienceService {
   ) {}
 
   /**
-   * `media` n'est pas une relation TypeORM : on charge les fichiers
+   * 'media` n'est pas une relation TypeORM : on charge les fichiers
    * à partir de `media_ids` et on les rattache à la main.
    */
   private async attachMedia(experiences: Experience[]): Promise<Experience[]> {

@@ -9,17 +9,18 @@ import {
   IsNumber,
   Min,
   Max,
-  IsEnum,
   ValidateNested,
   IsUUID,
+  IsArray,
 } from 'class-validator';
 import { User } from '../../user/user.entity';
 import { Etudiant } from '../etudiant.entity';
-import { Statut } from '../../common/enum/statut.enum';
 import type { LiensUtiles } from '../../common/types/liens-utiles';
 import { LiensUtilesDto } from './liens-utiles.dto';
 import { Type } from 'class-transformer';
 import { UpsertJobseekerDto } from '../../jobseeker/dto/upsert-jobseeker.dto';
+import { PartialType } from '@nestjs/mapped-types';
+import { Statut } from '../../common/enum/statut.enum';
 
 export class CreateEtudiantDto {
   // Informations User
@@ -50,34 +51,59 @@ export class CreateEtudiantDto {
   matricule: string;
 
   @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  nationality: string;
+
+  @ApiProperty()
+  @IsNumber()
+  @IsNotEmpty()
+  phone_number: number;
+
+  @ApiPropertyOptional()
+  @IsString()
+  @IsOptional()
+  main_domain?: string;
+
+  @ApiPropertyOptional()
+  @IsArray()
+  @IsOptional()
+  tools?: string[];
+
+  @ApiPropertyOptional()
+  @IsArray()
+  @IsOptional()
+  languages?: string[];
+
+  @ApiProperty()
   @IsNotEmpty()
   @IsString()
   annee_acad: string;
 
-  @ApiProperty({ required: false, default: false })
+  @ApiPropertyOptional({ required: false, default: false })
   @IsOptional()
   @IsBoolean()
   is_job_seeker?: boolean;
 
-  @ApiProperty({ required: false })
+  @ApiPropertyOptional({ required: false })
   @IsOptional()
   @IsNumber()
   @Min(0)
   @Max(5)
   star_rate?: number;
 
-  @ApiProperty({ required: false })
+  @ApiPropertyOptional({ required: false })
   @IsOptional()
   @IsString()
   bio?: string;
 
-  @ApiProperty({ type: () => LiensUtilesDto, required: false })
+  @ApiPropertyOptional({ type: () => LiensUtilesDto, required: false })
   @IsOptional()
   @ValidateNested()
   @Type(() => LiensUtilesDto)
   liens?: LiensUtiles;
 
-  @ApiProperty()
+  @ApiPropertyOptional()
   @IsUUID()
   @IsOptional()
   avatar_id?: string;
@@ -89,74 +115,10 @@ export class CreateEtudiantDto {
   jobseeker?: UpsertJobseekerDto;
 }
 
-export class UpdateEtudiantDto {
-  @ApiProperty({
-    required: false,
-    example: 'UI2027',
-    description: 'matricule étudiant',
-  })
-  @IsOptional()
-  @IsString()
-  matricule?: string;
-
-  @ApiProperty({ required: false, example: 'logan' })
-  @IsOptional()
-  @IsString()
-  nom?: string;
-
-  @ApiProperty({ required: false, example: 'prenom' })
-  @IsOptional()
-  @IsString()
-  prenom?: string;
-
-  @IsOptional()
-  @IsString()
-  @ApiProperty({ required: false, example: 'prenom' })
-  promotionId?: string;
-
-  @IsOptional()
-  @IsString()
-  @ApiProperty({ required: false, example: 'matricule' })
-  annee_acad?: string;
-
-  @IsOptional()
-  @IsBoolean()
-  @ApiProperty({ required: false, example: 'true' })
-  is_job_seeker?: boolean;
-
-  @ApiProperty({ required: false, example: 1 })
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  @Max(5)
-  star_rate?: number;
-
-  @ApiProperty({ required: false, example: Statut.ACTIF })
-  @IsOptional()
-  @IsEnum(Statut)
-  statut?: Statut;
-
-  @ApiProperty({ type: () => LiensUtilesDto, required: false })
-  @IsOptional()
-  @ValidateNested()
-  @Type(() => LiensUtilesDto)
-  liens?: LiensUtiles;
-
-  @ApiProperty({ required: false })
-  @IsOptional()
-  @IsString()
-  bio?: string;
-
+export class UpdateEtudiantDto extends PartialType(CreateEtudiantDto) {
   @ApiProperty()
-  @IsUUID()
-  @IsOptional()
-  avatar_id?: string;
-
-  @ApiPropertyOptional({ type: () => UpsertJobseekerDto })
-  @IsOptional()
-  @ValidateNested()
-  @Type(() => UpsertJobseekerDto)
-  jobseeker?: UpsertJobseekerDto;
+  @IsEmail()
+  statut?: Statut;
 }
 
 export class CreateEtudiantResponseDto {
