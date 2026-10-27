@@ -8,6 +8,7 @@ import { User } from '../user/user.entity';
 import { MailModule } from '../mail/mail.module';
 import { Etudiant } from '../etudiant/etudiant.entity';
 import Company from '../company/company.entity';
+import { ActivationTokenService } from '../common/services/activation-token.service';
 
 @Module({
   imports: [
@@ -16,7 +17,7 @@ import Company from '../company/company.entity';
     MailModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy],
+  providers: [AuthService, JwtStrategy, ActivationTokenService],
   exports: [AuthService],
 })
 export class AuthModule {}

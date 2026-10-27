@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
@@ -11,6 +11,8 @@ import { MailService } from '../mail/mail.service';
 import { Etudiant } from '../etudiant/etudiant.entity';
 import Company from '../company/company.entity';
 import { Roles as RolesEnum } from '../common/enum/roles.enum';
+import { Statut } from '../common/enum/statut.enum';
+import { ActivationTokenService } from '../common/services/activation-token.service';
 
 const RESET_TOKEN_TTL_MS = 60 * 60 * 1000; // 1h
 
@@ -23,10 +25,11 @@ export class AuthService {
     private readonly etudiantRepository: Repository<Etudiant>,
     @InjectRepository(Company)
     private readonly companyRepository: Repository<Company>,
-    // Une fois manager effectuer l'ajouter au niveau des logins pour l'id en fonction du role
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     private readonly mailService: MailService,
+    private readonly dataSource: DataSource,
+    private readonly activationTokenService: ActivationTokenService,
   ) {}
 
   async login(email: string, password: string) {
@@ -37,6 +40,8 @@ export class AuthService {
 
     if (!user || !(await bcrypt.compare(password, user.password)))
       ExceptionFactory.badRequest('Email ou mot de passe incorect');
+
+    this.assertCompteConnectable(user);
 
     const access_token = this.jwtService.sign({
       id: user.id,
@@ -55,6 +60,75 @@ export class AuthService {
         ...roleSpecificId,
       },
     };
+  }
+
+  private assertCompteConnectable(user: User) {
+    if (user.statut === Statut.ACTIF) return;
+
+    if (user.statut === Statut.EN_ATTENTE_ACTIVATION)
+      ExceptionFactory.forbidden(
+        "Votre compte n'est pas encore activé. Utilisez le lien d'activation reçu par mail.",
+      );
+
+    if (user.statut === Statut.INACTIF)
+      ExceptionFactory.forbidden(
+        'Votre compte est désactivé. Contactez un administrateur.',
+      );
+
+    ExceptionFactory.badRequest('Email ou mot de passe incorect');
+  }
+
+  /**
+   * @description Active un compte : Consomme le token d'activation, enregistre le mot de passe
+   * Choisi et passe le statut à ACTIF, le tout dans une transaction
+   * (Si une étape échoue, le token n'est pas consommé)
+   * @private
+   * @param token
+   * @param password
+   */
+  async activateAccount(token: string, password: string) {
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    await this.dataSource.transaction(async (manager) => {
+      const userId = await this.activationTokenService.consume(token, manager);
+      const user = await manager.findOne(User, { where: { id: userId } });
+      if (!user) ExceptionFactory.notFound("Lien d'activation invalide");
+
+      if (user.statut !== Statut.EN_ATTENTE_ACTIVATION)
+        ExceptionFactory.badRequest(
+          "Ce compte n'est pas en attente d'activation",
+        );
+
+      await manager.update(User, userId, {
+        password: hashedPassword,
+        statut: Statut.ACTIF,
+        updated_by: userId,
+        dte_modif: new Date(),
+      });
+    });
+  }
+
+  /**
+   * @description Renvoie un lien d'activation (lien expiré ou perdu).
+   * Réponse volontairement identique que le compte existe ou non.
+   * @private
+   * @param email
+   */
+  async resendActivation(email: string) {
+    const user = await this.userRepository.findOne({
+      where: { email: email.toLowerCase().trim() },
+    });
+
+    if (user?.statut !== Statut.EN_ATTENTE_ACTIVATION) return;
+
+    await this.activationTokenService.invalidateAll(user.id);
+    const rawToken = await this.activationTokenService.createAndSave(user.id);
+
+    await this.mailService.sendAccountActivationMail(
+      user.email,
+      user.nom,
+      this.activationTokenService.buildActivationLink(rawToken),
+    );
   }
 
   private async getRoleSpecificId(
