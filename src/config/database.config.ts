@@ -36,7 +36,7 @@ export function buildDatabaseOptions(
     username: get('DB_USERNAME'),
     password: get('DB_PASSWORD'),
     database: get('DB_NAME'),
-    synchronize: false, // schéma géré uniquement par les migrations
+    synchronize: true, // schéma géré uniquement par les migrations
     logging: getLogging(appEnv),
     ssl:
       isLocal || isRailwayInternal

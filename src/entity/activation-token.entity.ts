@@ -20,7 +20,7 @@ export class ActivationToken {
   userId: string;
 
   @ManyToOne(() => User)
-  @JoinColumn({ name: 'user_id' })
+  @JoinColumn({ name: 'userId' })
   user: User;
 
   @Column({ type: 'timestamp' })

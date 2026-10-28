@@ -16,6 +16,7 @@ import { Statut } from '../common/enum/statut.enum';
 import { RecruitmentStatusEnum } from '../common/enum/recruitment-status.enum';
 import { Roles as RolesEnum } from '../common/enum/roles.enum';
 import { ResultatPagine } from '../common/pagination';
+import { NiveauEtudeEnum } from '../common/enum/niveau-etude.enum';
 
 describe('CompanyController', () => {
   let controller: CompanyController;
@@ -28,6 +29,7 @@ describe('CompanyController', () => {
   };
 
   const mockCreateDto: CreateCompanyDto = {
+    minStudentLevel: NiveauEtudeEnum.FOURTH_YEAR,
     nom: 'Tech Corp',
     prenom: 'Jean',
     email: 'jean@techcorp.com',

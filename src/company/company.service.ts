@@ -59,7 +59,16 @@ export class CompanyService {
             statut: Statut.ACTIF,
             create_by: currentUser.id,
             dte_creation: new Date(),
-            isPartner: false,
+            isPartner: dto.isPartner,
+            localisation: dto.localisation,
+            logo_id: dto.logo_id,
+            banner_id: dto.banner_id,
+            company_name: dto.company_name,
+            company_description: dto.company_description,
+            contact_person: dto.contact_person,
+            contact_phone: dto.contact_phone,
+            recruitment_status: dto.recruitment_status,
+            minStudentLevel: dto.minStudentLevel,
           });
           return manager.save(company);
         },

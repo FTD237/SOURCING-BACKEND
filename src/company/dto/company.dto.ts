@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsEmail,
   IsString,
@@ -16,6 +16,7 @@ import { LocalisationCompanyDto } from './localisation-company.dto';
 import { Type } from 'class-transformer';
 import { RecruitmentStatusEnum } from '../../common/enum/recruitment-status.enum';
 import { PartialType } from '@nestjs/mapped-types';
+import { NiveauEtudeEnum } from '../../common/enum/niveau-etude.enum';
 
 export class CreateCompanyDto {
   // Informations User
@@ -39,18 +40,18 @@ export class CreateCompanyDto {
   @IsNotEmpty()
   country_code: string;
 
-  @ApiProperty({ type: () => LocalisationCompanyDto, required: false })
+  @ApiPropertyOptional({ type: () => LocalisationCompanyDto, required: false })
   @IsOptional()
   @ValidateNested()
   @Type(() => LocalisationCompanyDto)
   localisation?: LocalisationCompanyDto;
 
-  @ApiProperty()
+  @ApiPropertyOptional()
   @IsUUID()
   @IsOptional()
   logo_id?: string;
 
-  @ApiProperty()
+  @ApiPropertyOptional()
   @IsUUID()
   @IsOptional()
   banner_id?: string;
@@ -75,7 +76,7 @@ export class CreateCompanyDto {
   @IsNotEmpty()
   contact_phone: number;
 
-  @ApiProperty()
+  @ApiProperty({ default: false })
   @IsBoolean()
   @IsNotEmpty()
   isPartner: boolean;
@@ -84,6 +85,11 @@ export class CreateCompanyDto {
   @IsEnum(RecruitmentStatusEnum)
   @IsNotEmpty()
   recruitment_status: RecruitmentStatusEnum;
+
+  @ApiProperty()
+  @IsEnum(NiveauEtudeEnum)
+  @IsNotEmpty()
+  minStudentLevel: NiveauEtudeEnum;
 }
 
 export class UpdateCompanyDto extends PartialType(CreateCompanyDto) {}

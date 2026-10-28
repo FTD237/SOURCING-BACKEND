@@ -18,9 +18,10 @@ export class CreateExperienceDto {
     description: "Id de l'étudiant",
   })
   @IsUUID()
+  @IsNotEmpty()
   student_id: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: '1aec5bef-7a21-47d1-b7f5-c2a3e1b57023',
     description: "ID de l'entreprise",
     required: false,
@@ -37,7 +38,7 @@ export class CreateExperienceDto {
   @IsNotEmpty()
   intitule: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: 'Stage de 5eme année au cours duquel...',
     description: "Description de l'expérience",
     required: false,
@@ -46,7 +47,7 @@ export class CreateExperienceDto {
   @IsOptional()
   description?: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: 'Stage académique',
     description: "Type de l'expérience",
     required: false,
@@ -55,7 +56,7 @@ export class CreateExperienceDto {
   @IsOptional()
   type?: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: '2025-11-17',
     description: 'Date de début (format ISO 8601)',
     required: false,
@@ -64,7 +65,7 @@ export class CreateExperienceDto {
   @IsOptional()
   date_debut?: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: '2025-11-17',
     description: 'Date de fin (format ISO 8601)',
     required: false,
