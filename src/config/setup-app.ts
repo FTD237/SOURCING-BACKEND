@@ -1,6 +1,6 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
-import { GlobalExceptionFilter } from './common/filters/http-exception.filter';
-import { RateLimitGuard } from './guards/rate-limit.guard';
+import { GlobalExceptionFilter } from '../common/filters/http-exception.filter';
+import { RateLimitGuard } from '../guards/rate-limit.guard';
 import helmet from 'helmet';
 
 export function configureApp(app: INestApplication): void {

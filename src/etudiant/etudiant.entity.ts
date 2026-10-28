@@ -1,60 +1,123 @@
-// src/etudiant/etudiant.entity.ts
 import {
   Entity,
   PrimaryGeneratedColumn,
   Column,
   OneToOne,
   JoinColumn,
-  CreateDateColumn,
-  UpdateDateColumn,
   Unique,
+  OneToMany,
 } from 'typeorm';
+import { ApiProperty } from '@nestjs/swagger';
 import { User } from '../user/user.entity';
-import { Statut } from '../common/enum/statut.enum';
+import { AuditableEntity } from '../entity/auditable.entity';
+import { Postuler } from '../postuler/postuler.entity';
+import { EtudiantSkill } from '../etudiant-skill/etudiant-skill.entity';
+import { NiveauEtudeEnum } from '../common/enum/niveau-etude.enum';
+import type { LiensUtiles } from '../common/types/liens-utiles';
+import { FileEntity } from '../file/file.entity';
+import { Jobseeker } from '../jobseeker/jobseeker.entity';
 
 @Entity('etudiant')
 @Unique('UQ_ETUDIANT_MATRICULE', ['matricule'])
-export class Etudiant {
+export class Etudiant extends AuditableEntity {
+  @ApiProperty({ example: '1aec5bef-7a21-47d1-b7f5-c2a3e1b57023' })
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  @ApiProperty({ example: '1aec5bef-7a21-47d1-b7f5-c2a3e1b57023' })
   @Column()
   userId: string;
 
+  @ApiProperty({ type: () => User })
   @OneToOne(() => User, (user) => user.etudiant)
   @JoinColumn({ name: 'userId' })
   user: User;
 
+  @ApiProperty({ example: '1aec5bef-7a21-47d1-b7f5-c2a3e1b57023' })
   @Column()
   promotionId: string;
 
+  @ApiProperty({ example: 'UI2027' })
   @Column()
   matricule: string;
 
+  @ApiProperty({ example: '2025-2026' })
   @Column()
   annee_acad: string;
 
+  @ApiProperty({ example: false })
   @Column({ default: false })
   is_job_seeker: boolean;
 
+  @ApiProperty({ example: 0, required: false })
   @Column({ nullable: true, type: 'float', default: 0 })
   star_rate: number;
 
-  @CreateDateColumn()
-  dte_creation: Date;
+  @ApiProperty({ type: () => [Postuler] })
+  @OneToMany(() => Postuler, (postuler) => postuler.etudiant)
+  candidatures: Postuler[];
 
-  @UpdateDateColumn()
-  dte_modif: Date;
+  @ApiProperty({ type: () => [EtudiantSkill] })
+  @OneToMany(() => EtudiantSkill, (etudiantSkill) => etudiantSkill.etudiant)
+  etudiantSkills: EtudiantSkill[];
 
-  @Column({ default: Statut.ACTIF, type: 'enum', enum: Statut })
-  statut: Statut;
-
+  @ApiProperty({ example: 'je suis blablablablablablablablabla' })
   @Column({ nullable: true })
-  dte_suppression: Date;
+  bio: string;
 
-  @Column({ nullable: true, type: 'varchar' })
-  create_by: string;
+  @ApiProperty({
+    example: {
+      github: 'https://github.com/je-suis',
+      linkedin: 'https://www.linkedin.com/in/je-suis/',
+      portfolio: 'https://www.portfolio.com/je-suis',
+    },
+  })
+  @Column({ type: 'jsonb', nullable: true })
+  liens: LiensUtiles;
 
-  @Column({ nullable: true, type: 'varchar' })
-  updated_by: string;
+  @ApiProperty({
+    enum: NiveauEtudeEnum,
+    enumName: 'NiveauEtudeEnum',
+    example: NiveauEtudeEnum.FOURTH_YEAR,
+  })
+  @Column({
+    enum: NiveauEtudeEnum,
+    enumName: 'NiveauEtudeEnum',
+    type: 'enum',
+    default: NiveauEtudeEnum.FIRST_YEAR,
+  })
+  scholar_level: NiveauEtudeEnum;
+
+  @ApiProperty({ example: 'Camerounais' })
+  @Column()
+  nationality: string;
+
+  @ApiProperty({ example: 638423556 })
+  @Column({ nullable: true, type: 'int' })
+  phone_number: number;
+
+  @ApiProperty({ example: 'Génie logiciel' })
+  @Column({ nullable: true })
+  main_domain: string;
+
+  @ApiProperty({ example: ['Webstorm', 'autocad'] })
+  @Column('text', { array: true, nullable: true })
+  tools: string[];
+
+  @ApiProperty({ example: ['anglais', 'français'] })
+  @Column('text', { array: true, default: () => "'{}'" })
+  languages: string[];
+
+  @ApiProperty({ example: '1aec5bef-7a21-47d1-b7f5-c2a3e1b57023' })
+  @Column({ nullable: true, type: 'uuid' })
+  avatar_id: string | null;
+
+  @ApiProperty({ type: () => FileEntity })
+  @OneToOne(() => FileEntity, { nullable: true })
+  @JoinColumn({ name: 'avatar_id' })
+  avatar: FileEntity | null;
+
+  @ApiProperty({ type: () => Jobseeker })
+  @OneToOne(() => Jobseeker, (jobseeker) => jobseeker.etudiant)
+  jobseeker: Jobseeker;
 }

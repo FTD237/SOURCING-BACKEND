@@ -11,7 +11,7 @@ import type { Request, Response } from 'express';
 
 const rateLimiter = new Ratelimit({
   redis: Redis.fromEnv(),
-  limiter: Ratelimit.slidingWindow(10, '1 m'), // 10 req / minutes
+  limiter: Ratelimit.slidingWindow(10000, '1 m'), // 10 req / minutes
 });
 
 @Injectable()

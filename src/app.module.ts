@@ -14,40 +14,28 @@ import { AuthModule } from './auth/auth.module';
 import { CompanyModule } from './company/company.module';
 import { MailModule } from './mail/mail.module';
 import { FileModule } from './file/file.module';
+import { PostulerModule } from './postuler/postuler.module';
+import { EtudiantSkillModule } from './etudiant-skill/etudiant-skill.module';
+import { NotificationModule } from './notifications/notification.module';
+import { buildDatabaseOptions, getAppEnv } from './config/database.config';
+import { EvaluationModule } from './evaluation/evaluation.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: `.env.${process.env.NODE_ENV ?? 'development'}`,
+      envFilePath: `.env.${getAppEnv()}`,
     }),
 
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (config: ConfigService) => {
-        const isProduction = config.get('NODE_ENV') === 'production';
-        return {
-          type: 'postgres',
-          host: config.get('DB_HOST'),
-          port: config.get('DB_PORT'),
-          username: config.get('DB_USERNAME'),
-          password: config.get('DB_PASSWORD'),
-          database: config.get('DB_NAME'),
-          autoLoadEntities: true,
-          synchronize: config.get('NODE_ENV') !== 'production',
-          logging: !isProduction,
-          ssl: isProduction,
-          ...(isProduction && {
-            extra: {
-              ssl: process.env.DB_HOST?.includes('railway.internal')
-                ? false
-                : { rejectUnauthorized: true, ca: process.env.DB_SSL_CA },
-            },
-          }),
-        };
-      },
+      useFactory: (config: ConfigService) => ({
+        ...buildDatabaseOptions((k) => config.get<string>(k)),
+        autoLoadEntities: true,
+      }),
     }),
+
     JwtModule.registerAsync({
       global: true,
       imports: [ConfigModule],
@@ -79,6 +67,10 @@ import { FileModule } from './file/file.module';
     CompanyModule,
     MailModule,
     FileModule,
+    PostulerModule,
+    EtudiantSkillModule,
+    NotificationModule,
+    EvaluationModule,
   ],
 })
 export class AppModule {}

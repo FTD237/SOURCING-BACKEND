@@ -9,4 +9,5 @@ module.exports = {
   coverageDirectory: '../coverage',
   coverageReporters: ['lcov', 'text', 'html'],
   testEnvironment: 'node',
+  setupFiles: ['reflect-metadata'],
 };

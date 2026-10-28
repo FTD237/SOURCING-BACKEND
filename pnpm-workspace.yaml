@@ -5,13 +5,24 @@ allowBuilds:
   unrs-resolver: true
 
 overrides:
-  js-yaml: '>=5.2.2'
   'brace-expansion@5': '>=5.0.8'
   # tirés par @nestjs-modules/mailer > preview-email (fonctionnalité de
   # prévisualisation en dev, non utilisée par MailModule) > mailparser
-  nodemailer: '>=9.0.1'
+  nodemailer: '>=9.1.0'
   linkify-it: '>=5.0.2'
   uuid: '>=11.1.1'
+  svgo: ">=4.1.0"
+  multer: ">=2.3.0"
+  "parse-url": ">=8.1.0"
+  "gry": ">=6.0.0"
+  "tmp": ">=0.2.6"
+  "proxy-addr": ">=2.0.8"
+  "handlebars": ">=4.7.10"
+  # Vulnérabilité élevée
+  "source-map-js": ">=1.2.2"
+  # Vulnérabilités modérées
+  "qs": ">=6.16.0"
+  "js-yaml": ">=5.4.1"
 
 auditConfig:
   ignoreGhsas:

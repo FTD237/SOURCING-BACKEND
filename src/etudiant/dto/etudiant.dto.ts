@@ -1,5 +1,5 @@
 // src/etudiant/etudiant.dto.ts
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsEmail,
   IsString,
@@ -10,10 +10,16 @@ import {
   Min,
   Max,
   IsEnum,
+  ValidateNested,
+  IsUUID,
 } from 'class-validator';
-import { User } from '../user/user.entity';
-import { Etudiant } from './etudiant.entity';
-import { Statut } from '../common/enum/statut.enum';
+import { User } from '../../user/user.entity';
+import { Etudiant } from '../etudiant.entity';
+import { Statut } from '../../common/enum/statut.enum';
+import type { LiensUtiles } from '../../common/types/liens-utiles';
+import { LiensUtilesDto } from './liens-utiles.dto';
+import { Type } from 'class-transformer';
+import { UpsertJobseekerDto } from '../../jobseeker/dto/upsert-jobseeker.dto';
 
 export class CreateEtudiantDto {
   // Informations User
@@ -59,6 +65,28 @@ export class CreateEtudiantDto {
   @Min(0)
   @Max(5)
   star_rate?: number;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  bio?: string;
+
+  @ApiProperty({ type: () => LiensUtilesDto, required: false })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => LiensUtilesDto)
+  liens?: LiensUtiles;
+
+  @ApiProperty()
+  @IsUUID()
+  @IsOptional()
+  avatar_id?: string;
+
+  @ApiPropertyOptional({ type: () => UpsertJobseekerDto })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => UpsertJobseekerDto)
+  jobseeker?: UpsertJobseekerDto;
 }
 
 export class UpdateEtudiantDto {
@@ -107,6 +135,28 @@ export class UpdateEtudiantDto {
   @IsOptional()
   @IsEnum(Statut)
   statut?: Statut;
+
+  @ApiProperty({ type: () => LiensUtilesDto, required: false })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => LiensUtilesDto)
+  liens?: LiensUtiles;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  bio?: string;
+
+  @ApiProperty()
+  @IsUUID()
+  @IsOptional()
+  avatar_id?: string;
+
+  @ApiPropertyOptional({ type: () => UpsertJobseekerDto })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => UpsertJobseekerDto)
+  jobseeker?: UpsertJobseekerDto;
 }
 
 export class CreateEtudiantResponseDto {

@@ -7,7 +7,7 @@ import {
   CreateEtudiantDto,
   CreateEtudiantResponseDto,
   UpdateEtudiantDto,
-} from './etudiant.dto';
+} from './dto/etudiant.dto';
 import { User } from '../user/user.entity';
 import { Role } from '../entity/role.entity';
 import { ExceptionFactory } from '../common/exceptions/exception-factory';
@@ -15,9 +15,13 @@ import { generatePassword } from '../common/utils/generate-password';
 import { Statut } from '../common/enum/statut.enum';
 import { ActivationTokenService } from '../common/services/activation-token.service';
 import { MailService } from '../mail/mail.service';
+import { Roles } from '../common/enum/roles.enum';
+import { LinkCheckerService } from '../common/services/link-checker.service';
+import { JobseekerService } from '../jobseeker/jobseeker.service';
+import { paginer, PaginationDto, ResultatPagine } from '../common/pagination';
 
 @Injectable()
-export class EtudiantService {
+class EtudiantService {
   constructor(
     @InjectRepository(Etudiant)
     private readonly etudiantRepo: Repository<Etudiant>,
@@ -28,6 +32,8 @@ export class EtudiantService {
     private readonly dataSource: DataSource,
     private readonly activationTokenService: ActivationTokenService,
     private readonly mailService: MailService,
+    private readonly linkCheckerService: LinkCheckerService,
+    private readonly jobseekerService: JobseekerService,
   ) {}
   private readonly logger = new Logger(EtudiantService.name);
 
@@ -46,13 +52,18 @@ export class EtudiantService {
       );
 
     const roleEtudiant = await this.roleRepo.findOne({
-      where: { nom: 'etudiant' },
+      where: { nom: Roles.ETUDIANT },
     });
 
     if (!roleEtudiant)
       ExceptionFactory.notFound(
         'Le rôle "etudiant" n\'existe pas. Veuillez le créer avant',
       );
+
+    // Seuls les liens renseignés sont vérifiés (validateLinksOrThrow ignore les vides)
+    if (dto.liens) {
+      await this.linkCheckerService.validateLinksOrThrow(dto.liens);
+    }
 
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
@@ -89,9 +100,22 @@ export class EtudiantService {
         star_rate: dto.star_rate || 0,
         statut: Statut.ACTIF,
         create_by: createdBy,
+        dte_creation: new Date(),
+        bio: dto.bio,
+        liens: dto.liens,
+        avatar_id: dto.avatar_id,
       });
 
       savedEtudiant = await queryRunner.manager.save(etudiant);
+
+      if (savedEtudiant.is_job_seeker) {
+        await this.jobseekerService.activerDans(
+          queryRunner.manager,
+          savedEtudiant.id,
+          dto.jobseeker ?? {},
+          currentUser,
+        );
+      }
 
       rawToken = await this.activationTokenService.createAndSave(
         savedUser.id,
@@ -127,14 +151,23 @@ export class EtudiantService {
     };
   }
 
-  async findAll(): Promise<Etudiant[]> {
-    return this.etudiantRepo.find({ relations: { user: true } });
+  async findAll(pagination: PaginationDto): Promise<ResultatPagine<Etudiant>> {
+    const { page, limite } = pagination;
+
+    const resultat = await this.etudiantRepo.findAndCount({
+      relations: { user: true, jobseeker: true },
+      order: { dte_creation: 'DESC' },
+      skip: (page - 1) * limite,
+      take: limite,
+    });
+
+    return paginer(resultat, pagination);
   }
 
   async findOne(id: string): Promise<Etudiant> {
     const etudiant = await this.etudiantRepo.findOne({
       where: { id },
-      relations: { user: true },
+      relations: { user: true, jobseeker: true },
     });
     if (!etudiant)
       ExceptionFactory.notFound('Etudiant', `Etudiant #${id} introuvable`);
@@ -150,26 +183,61 @@ export class EtudiantService {
       where: { id },
       relations: { user: true },
     });
-
     if (!etudiant) ExceptionFactory.notFound(`Etudiant`, id);
 
-    const { nom, prenom, ...etudiantFields } = dto;
+    // is_job_seeker et jobseeker sortent de l'update générique :
+    // c'est JobseekerService qui écrit le flag, pour qu'il reste cohérent avec la table.
+    // liens en sort aussi : on écrit la version fusionnée, pas celle du dto
+    // (sinon un lien seul écraserait les autres).
+    const { nom, prenom, is_job_seeker, jobseeker, liens, ...etudiantFields } =
+      dto;
 
-    if (nom || prenom) {
-      await this.userRepo.update(etudiant.user.id, {
-        ...(nom && { nom }),
-        ...(prenom && { prenom }),
-      });
+    let liensFusionnes: Etudiant['liens'] | undefined;
+    if (liens) {
+      const envoyes = Object.fromEntries(
+        Object.entries(liens).filter(([, v]) => v !== undefined),
+      );
+      // on ne vérifie que les liens envoyés, pas ceux déjà en base
+      await this.linkCheckerService.validateLinksOrThrow(envoyes);
+      liensFusionnes = { ...etudiant.liens, ...envoyes };
     }
 
-    await this.etudiantRepo.update(id, {
-      ...etudiantFields,
-      updated_by: currentUser.id,
+    await this.dataSource.transaction(async (manager) => {
+      if (nom || prenom) {
+        await manager.update(User, etudiant.user.id, {
+          ...(nom && { nom }),
+          ...(prenom && { prenom }),
+        });
+      }
+
+      await manager.update(Etudiant, id, {
+        ...etudiantFields,
+        ...(liensFusionnes && { liens: liensFusionnes }),
+        updated_by: currentUser.id,
+        dte_modif: new Date(),
+      });
+
+      if (is_job_seeker === false) {
+        if (etudiant.is_job_seeker) {
+          await this.jobseekerService.desactiverDans(manager, id, currentUser);
+        }
+      } else if (
+        is_job_seeker === true ||
+        (jobseeker && etudiant.is_job_seeker)
+      ) {
+        // passage à true, ou mise à jour des détails d'un étudiant déjà en recherche
+        await this.jobseekerService.activerDans(
+          manager,
+          id,
+          jobseeker ?? {},
+          currentUser,
+        );
+      }
     });
 
     return this.etudiantRepo.findOne({
       where: { id },
-      relations: { user: true },
+      relations: { user: true, jobseeker: true },
     });
   }
 
@@ -188,3 +256,5 @@ export class EtudiantService {
     }
   }
 }
+
+export default EtudiantService;

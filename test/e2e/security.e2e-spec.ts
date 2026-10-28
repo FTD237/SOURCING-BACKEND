@@ -3,7 +3,7 @@ import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import type { App } from 'supertest/types';
 import { AppModule } from '../../src/app.module';
-import { configureApp } from '../../src/setup-app';
+import { configureApp } from '../../src/config/setup-app';
 
 function getServer(app: INestApplication): App {
   return app.getHttpServer() as App;

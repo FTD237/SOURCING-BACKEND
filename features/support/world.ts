@@ -8,7 +8,7 @@ import { INestApplication } from '@nestjs/common';
 import { AppModule } from '../../src/app.module';
 import request from 'supertest';
 import type { App } from 'supertest/types';
-import { configureApp } from '../../src/setup-app';
+import { configureApp } from '../../src/config/setup-app';
 
 export function getServer(world: CustomWorld): App {
   return world.app.getHttpServer() as App;
