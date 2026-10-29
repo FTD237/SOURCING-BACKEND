@@ -10,6 +10,7 @@ import { NotificationService } from '../notifications/notification.service';
 import { NotificationType } from '../common/enum/notification-type.enum';
 import { StatutCandidature } from '../common/enum/statut-candidature.enum';
 import { Roles } from '../common/enum/roles.enum';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 export type CurrentUser = { id: string; email: string; role: Roles };
 
@@ -19,6 +20,7 @@ export class PostulerService {
     @InjectRepository(Postuler)
     private readonly postulerRepository: Repository<Postuler>,
     private readonly notificationService: NotificationService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   /**
@@ -130,12 +132,26 @@ export class PostulerService {
     currentUser: CurrentUser,
   ): Promise<Postuler> {
     const postuler = await this.findOne(id, currentUser);
+    const ancienStatut = postuler.statut_candidature; // à lire AVANT l'écrasement
     postuler.statut_candidature = dto.statut;
     postuler.updated_by = currentUser.id;
     postuler.dte_modif = new Date();
     const saved = await this.postulerRepository.save(postuler);
 
     await this.notifyStatutChange(postuler, dto.statut);
+
+    // Après le save : le listener relit la candidature en base
+    if (
+      ancienStatut !== StatutCandidature.ACCEPTEE &&
+      dto.statut === StatutCandidature.ACCEPTEE
+    ) {
+      this.eventEmitter.emit('postuler.acceptee', { postulerId: saved.id });
+    } else if (
+      ancienStatut === StatutCandidature.ACCEPTEE &&
+      dto.statut === StatutCandidature.REFUSEE
+    ) {
+      this.eventEmitter.emit('postuler.annulee', { postulerId: saved.id });
+    }
 
     return saved;
   }
@@ -184,6 +200,7 @@ export class PostulerService {
     postuler.updated_by = currentUser.id;
     try {
       await this.postulerRepository.save(postuler);
+      this.eventEmitter.emit('postuler.annulee', { postulerId: postuler.id });
     } catch (error) {
       ExceptionFactory.database(error, 'Postuler');
     }
