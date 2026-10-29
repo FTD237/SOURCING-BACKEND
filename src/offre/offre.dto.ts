@@ -16,6 +16,21 @@ import { NiveauEtudeEnum } from '../common/enum/niveau-etude.enum';
 import { Transform } from 'class-transformer';
 import { parseDurationToMonths } from '../common/utils/duration.util';
 
+/**
+ * Transforme une chaîne ISO 8601 en Date.
+ * Retourne `undefined` si la valeur est absente ou invalide
+ * (pour laisser @IsNotEmpty / @IsDate gérer l'erreur).
+ */
+const versDate = ({ value }: { value: unknown }): Date | undefined => {
+  if (value === null || value === undefined || value === '') return undefined;
+  if (value instanceof Date) return value;
+  if (typeof value === 'string' || typeof value === 'number') {
+    const d = new Date(value);
+    return Number.isNaN(d.getTime()) ? undefined : d;
+  }
+  return undefined;
+};
+
 export class CreateOffreDto {
   @ApiPropertyOptional({
     description: "Description détaillée de l'offre",
@@ -57,12 +72,14 @@ export class CreateOffreDto {
   titre: string;
 
   @ApiProperty({ format: 'date-time' })
-  @IsDate()
+  @Transform(versDate)
+  @IsDate({ message: 'dte_debut doit être une date valide' })
   @IsNotEmpty()
   dte_debut: Date;
 
   @ApiProperty({ format: 'date-time' })
-  @IsDate()
+  @Transform(versDate)
+  @IsDate({ message: 'dte_fin doit être une date valide' })
   @IsNotEmpty()
   dte_fin: Date;
 
