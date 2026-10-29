@@ -119,6 +119,7 @@ export class CreateEtudiantDto {
 export class UpdateEtudiantDto extends PartialType(CreateEtudiantDto) {
   @ApiProperty()
   @IsEnum(Statut)
+  @IsOptional()
   statut?: Statut;
 }
 
