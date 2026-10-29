@@ -12,6 +12,7 @@ import {
   ValidateNested,
   IsUUID,
   IsArray,
+  IsEnum,
 } from 'class-validator';
 import { User } from '../../user/user.entity';
 import { Etudiant } from '../etudiant.entity';
@@ -117,7 +118,7 @@ export class CreateEtudiantDto {
 
 export class UpdateEtudiantDto extends PartialType(CreateEtudiantDto) {
   @ApiProperty()
-  @IsEmail()
+  @IsEnum(Statut)
   statut?: Statut;
 }
 
