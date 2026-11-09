@@ -39,6 +39,7 @@ import { ResultatPagine } from '../common/pagination';
 // ⚠️ adapte ce chemin au dossier qui contient ton index Swagger
 import { ApiReponsePaginee } from '../common/swagger';
 import { RechercheEtudiantDto } from './dto/recherche.etudiant.dto';
+import { CreateEtudiantsBulkDto } from './dto/create-etudiant-bulk.dto';
 
 /**
  * Gère le cycle de vie des étudiants (création, consultation, mise à jour,
@@ -84,6 +85,17 @@ export class EtudiantController {
     @GetUser() currentUser: { id: string; email: string },
   ): Promise<CreateEtudiantResponseDto> {
     return this.etudiantService.create(dto, currentUser);
+  }
+
+  @Post('bulk')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(RolesEnum.ADMIN, RolesEnum.SUPERADMIN, RolesEnum.MANAGER)
+  @ApiOperation({ summary: 'Création d’étudiants en masse (import Excel)' })
+  createBulk(
+    @Body() dto: CreateEtudiantsBulkDto,
+    @GetUser() currentUser: { id: string },
+  ) {
+    return this.etudiantService.createBulk(dto, currentUser);
   }
 
   /**

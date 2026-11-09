@@ -1,14 +1,25 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { In, Repository, SelectQueryBuilder } from 'typeorm';
 import { Experience } from './experience.entity';
 import { CreateExperienceDto, UpdateExperienceDto } from './dto/experience.dto';
 import { Statut } from '../common/enum/statut.enum';
 import { FileEntity } from '../file/file.entity';
 import { ExceptionFactory } from '../common/exceptions/exception-factory';
+import { RechercheEtudiantDto } from '../etudiant/dto/recherche.etudiant.dto';
+import { Roles } from '../common/enum/roles.enum';
+import { paginer, ResultatPagine } from '../common/pagination';
+import { RechercheExperienceDTO } from './dto/recherche.experience.dto';
 
 @Injectable()
 export class ExperienceService {
+  /** Rôles autorisés à consulter les expériences supprimés. */
+  private static readonly ROLES_VOIR_SUPPRIMES: Roles[] = [
+    Roles.ADMIN,
+    Roles.MANAGER,
+    Roles.SUPERADMIN,
+  ];
+
   private static readonly RELATIONS = {
     etudiant: { user: true },
     company: true,
@@ -65,11 +76,73 @@ export class ExperienceService {
     return this.findOne(saved.id);
   }
 
-  async findAll(): Promise<Experience[]> {
-    const experiences = await this.expRepo.find({
-      relations: ExperienceService.RELATIONS,
-    });
-    return this.attachMedia(experiences);
+  // async findAll(): Promise<Experience[]> {
+  //   const experiences = await this.expRepo.find({
+  //     relations: ExperienceService.RELATIONS,
+  //   });
+  //   return this.attachMedia(experiences);
+  // }
+
+  async findAll(
+    filtre: RechercheEtudiantDto,
+    currentUser: { id: string; email: string; role: Roles },
+  ): Promise<ResultatPagine<Experience>> {
+    const { page, limite } = filtre;
+
+    this.verifierAccesSupprimes(filtre, currentUser);
+
+    const qb = this.expRepo.createQueryBuilder('e');
+
+    this.appliquerFiltresIdentifiants(qb, filtre);
+    this.appliquerFiltresIdentifiants(qb, filtre);
+    this.appliquerFiltreStatut(qb, filtre);
+
+    const resultat = await qb
+      .orderBy('e.dte_creation', 'DESC')
+      .skip((page - 1) * limite)
+      .take(limite)
+      .getManyAndCount();
+
+    return paginer(resultat, filtre);
+  }
+
+  private verifierAccesSupprimes(
+    filtre: RechercheExperienceDTO,
+    currentUser: { role: Roles },
+  ): void {
+    const veutSupprimes =
+      filtre.inclureSupprimes === true || filtre.statut === Statut.SUPPRIME;
+
+    if (
+      veutSupprimes &&
+      !ExperienceService.ROLES_VOIR_SUPPRIMES.includes(currentUser.role)
+    ) {
+      ExceptionFactory.forbidden(
+        'Seuls un admin ou un manager peuvent consulter les Expériences supprimés',
+      );
+    }
+  }
+
+  private appliquerFiltreStatut(
+    qb: SelectQueryBuilder<Experience>,
+    filtre: RechercheExperienceDTO,
+  ): void {
+    if (filtre.statut) {
+      qb.andWhere('e.statut = :statut', { statut: filtre.statut });
+    } else if (!filtre.inclureSupprimes) {
+      qb.andWhere('e.statut <> :supprime', { supprime: Statut.SUPPRIME });
+    }
+  }
+
+  private appliquerFiltresIdentifiants(
+    qb: SelectQueryBuilder<Experience>,
+    filtre: RechercheExperienceDTO,
+  ): void {
+    if (filtre.id) qb.andWhere('e.id = :id', { id: filtre.id });
+    if (filtre.idCompany)
+      qb.andWhere('e.company_id = :company_id', { id: filtre.idCompany });
+    if (filtre.student_id)
+      qb.andWhere('e.student_id = :student_id', { id: filtre.student_id });
   }
 
   async findByEtudiant(studentId: string): Promise<Experience[]> {

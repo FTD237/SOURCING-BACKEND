@@ -1,6 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Brackets, DataSource, Repository, SelectQueryBuilder } from 'typeorm';
+import {
+  Brackets,
+  DataSource,
+  In,
+  Repository,
+  SelectQueryBuilder,
+} from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { Etudiant } from './etudiant.entity';
 import {
@@ -20,6 +26,8 @@ import { LinkCheckerService } from '../common/services/link-checker.service';
 import { JobseekerService } from '../jobseeker/jobseeker.service';
 import { paginer, ResultatPagine } from '../common/pagination';
 import { RechercheEtudiantDto } from './dto/recherche.etudiant.dto';
+import { CreateEtudiantsBulkDto } from './dto/create-etudiant-bulk.dto';
+import { randomBytes } from 'node:crypto';
 
 /** Échappe % et _ pour une recherche "contient" sans jokers involontaires. */
 const contient = (valeur: string): string =>
@@ -168,13 +176,126 @@ class EtudiantService {
     };
   }
 
+  async createBulk(
+    dto: CreateEtudiantsBulkDto,
+    currentUser: { id: string },
+  ): Promise<{ total: number; crees: number }> {
+    const lignes = dto.etudiants.map((l) => ({
+      ...l,
+      email: l.email.trim().toLowerCase(),
+      matricule: l.matricule.trim(),
+    }));
+
+    const erreurs: { ligne: number; message: string }[] = [];
+    const ligneExcel = (i: number) => i + 2; // ligne 1 = en-têtes
+
+    // 1. doublons dans le fichier (email + matricule)
+    const detecterDoublons = (
+      cle: 'email' | 'matricule',
+      libelle: string,
+    ): Set<string> => {
+      const vus = new Map<string, number>();
+      lignes.forEach((l, i) => {
+        const v = l[cle];
+        if (vus.has(v)) {
+          erreurs.push({
+            ligne: ligneExcel(i),
+            message: `${libelle} en double dans le fichier (déjà ligne ${ligneExcel(vus.get(v)!)}) : ${v}`,
+          });
+        } else {
+          vus.set(v, i);
+        }
+      });
+      return new Set(vus.keys());
+    };
+    const emails = detecterDoublons('email', 'Email');
+    const matricules = detecterDoublons('matricule', 'Matricule');
+
+    // 2. doublons en base
+    const [usersExistants, etudiantsExistants] = await Promise.all([
+      this.userRepo.find({
+        where: { email: In([...emails]) },
+        select: { email: true },
+      }),
+      this.etudiantRepo.find({
+        where: { matricule: In([...matricules]) },
+        select: { matricule: true },
+      }),
+    ]);
+    const emailsPris = new Set(usersExistants.map((u) => u.email));
+    const matriculesPris = new Set(etudiantsExistants.map((e) => e.matricule));
+
+    lignes.forEach((l, i) => {
+      if (emailsPris.has(l.email))
+        erreurs.push({
+          ligne: ligneExcel(i),
+          message: `Email déjà utilisé : ${l.email}`,
+        });
+      if (matriculesPris.has(l.matricule))
+        erreurs.push({
+          ligne: ligneExcel(i),
+          message: `Matricule déjà utilisé : ${l.matricule}`,
+        });
+    });
+
+    if (erreurs.length) {
+      ExceptionFactory.badRequest(
+        'Import refusé : corrigez les lignes en erreur',
+      );
+    }
+
+    // 3. rôle étudiant (à adapter selon la colonne qui identifie vos rôles)
+    const roleEtudiant = await this.roleRepo.findOne({
+      where: { nom: Roles.ETUDIANT },
+    });
+    if (!roleEtudiant) {
+      ExceptionFactory.badRequest('Le rôle étudiant est introuvable');
+    }
+
+    // 4. insertion atomique
+    await this.dataSource.transaction(async (manager) => {
+      for (const l of lignes) {
+        const password = await bcrypt.hash(randomBytes(8).toString('hex'), 10);
+
+        const user = await manager.save(
+          manager.create(User, {
+            email: l.email,
+            nom: l.nom,
+            prenom: l.prenom,
+            password,
+            id_role: roleEtudiant.id,
+            create_by: currentUser.id,
+            dte_creation: new Date(),
+          }),
+        );
+
+        await manager.save(
+          manager.create(Etudiant, {
+            userId: user.id,
+            promotionId: l.promotionId,
+            matricule: l.matricule,
+            annee_acad: l.annee_acad,
+            nationality: l.nationality,
+            scholar_level: l.scholar_level, // le défaut de l'entité s'applique si undefined
+            phone_number: l.phone_number,
+            main_domain: l.main_domain,
+            create_by: currentUser.id,
+            dte_creation: new Date(),
+          }),
+        );
+      }
+    });
+
+    return { total: lignes.length, crees: lignes.length };
+  }
+
   /**
    * Liste paginée et filtrable des étudiants.
    *
    * - Les étudiants supprimés sont exclus par défaut.
    * - `inclureSupprimes` ou `statut = SUPPRIME` les révèle, mais seulement
    *   pour ADMIN, MANAGER et SUPERADMIN (403 sinon).
-   * - Les filtres se combinent (ET) ; `q` cherche dans nom, prénom, email
+   * - Les filtres se combinent (ET) ; `q` cherche dans le nom, prénom, email
    *   et matricule (OU).
    */
   async findAll(
@@ -320,7 +441,7 @@ class EtudiantService {
     });
     if (!etudiant) ExceptionFactory.notFound(`Etudiant`, id);
 
-    // is_job_seeker et jobseeker sortent de l'update générique :
+    // Ici is_job_seeker et jobseeker sortent de l'update générique :
     // c'est JobseekerService qui écrit le flag, pour qu'il reste cohérent avec la table.
     // Liens en sort aussi : on écrit la version fusionnée, pas celle du dto
     // (sinon un lien seul écraserait les autres).

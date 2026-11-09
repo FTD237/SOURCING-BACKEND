@@ -6,6 +6,7 @@ import {
   IsEnum,
   IsOptional,
   IsString,
+  IsUUID,
   MaxLength,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
@@ -36,6 +37,33 @@ export class RechercheExperienceDTO extends PaginationDto {
   @IsOptional()
   @MaxLength(100)
   q?: string;
+
+  @ApiPropertyOptional({
+    description: "Id de l'expérience (UUID)",
+    example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+    format: 'uuid',
+  })
+  @IsOptional()
+  @IsUUID()
+  id?: string;
+
+  @ApiPropertyOptional({
+    description: 'Id de la company (UUID)',
+    example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+    format: 'uuid',
+  })
+  @IsOptional()
+  @IsUUID()
+  idCompany?: string;
+
+  @ApiPropertyOptional({
+    description: "Id de l'étudiant (UUID)",
+    example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+    format: 'uuid',
+  })
+  @IsOptional()
+  @IsUUID()
+  student_id?: string;
 
   @ApiPropertyOptional({
     description: "intitule de l'expérience",
