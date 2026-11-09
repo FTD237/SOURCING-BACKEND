@@ -18,8 +18,8 @@ export function configureApp(app: INestApplication): void {
     new ValidationPipe({
       whitelist: true,
       transform: true,
-      transformOptions: { enableImplicitConversion: true },
     }),
   );
+  app.setGlobalPrefix('api/v1');
   app.useGlobalGuards(new RateLimitGuard());
 }

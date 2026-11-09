@@ -38,7 +38,7 @@ class Company extends AuditableEntity {
 
   @ApiProperty({ type: () => Country })
   @ManyToOne(() => Country)
-  @JoinColumn({ name: 'country_code' })
+  @JoinColumn({ name: 'country_code', referencedColumnName: 'code' })
   country: Country;
 
   @ApiProperty({ type: () => [Offre] })

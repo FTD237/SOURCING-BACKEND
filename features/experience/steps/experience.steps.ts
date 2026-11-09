@@ -10,7 +10,7 @@ import { Statut } from '../../../src/common/enum/statut.enum';
 import {
   CreateExperienceDto,
   UpdateExperienceDto,
-} from '../../../src/experience/experience.dto';
+} from '../../../src/experience/dto/experience.dto';
 
 // ── Typed interfaces ────────────────────────────────────────
 

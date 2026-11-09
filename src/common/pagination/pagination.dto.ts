@@ -13,7 +13,7 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 /**
  * Borne haute de la taille de page.
  *
- * Sans elle, `?limite=1000000` laisserait n'importe quel visiteur demander
+ * Sans elle, `?limite=1000000` laisserait n'importe quel visiteur demandé
  * l'annuaire complet en une requête : coût serveur non borné d'un côté,
  * aspiration des profils de finissants de l'autre.
  */

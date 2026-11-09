@@ -9,10 +9,11 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { ExperienceService } from './experience.service';
-import { CreateExperienceDto, UpdateExperienceDto } from './experience.dto';
+import { CreateExperienceDto, UpdateExperienceDto } from './dto/experience.dto';
 import {
   ApiBearerAuth,
   ApiBody,
@@ -30,6 +31,9 @@ import {
 } from '../decorators/api-common-response.decorator';
 import { Roles } from '../decorators/roles.decorator';
 import { GetUser } from '../auth/get-user.decorator';
+import { RechercheExperienceDTO } from './dto/recherche.experience.dto';
+import { ResultatPagine } from '../common/pagination';
+import { ApiReponsePaginee } from '../common/swagger';
 
 /**
  * Gère le cycle de vie des expériences étudiantes (création, consultation,
@@ -105,9 +109,13 @@ export class ExperienceController {
     type: Experience,
     isArray: true,
   })
-  @ApiCrudErrorResponses()
-  findAll(): Promise<Experience[]> {
-    return this.experienceService.findAll();
+  @ApiReponsePaginee(Experience)
+  @ApiCrudErrorResponses({ badRequest: true })
+  findAll(
+    @Query() filtre: RechercheExperienceDTO,
+    @GetUser() currentUser: { id: string; email: string; role: RolesEnum },
+  ): Promise<ResultatPagine<Experience>> {
+    return this.experienceService.findAll(filtre, currentUser);
   }
 
   /**
