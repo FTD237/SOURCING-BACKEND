@@ -5,9 +5,11 @@ import { LoginDto } from './dto/login.dto';
 import { AuthResponseDto } from './dto/auth-response.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { ActivateAccountDto } from './dto/activate-account.dto';
+import { ResendActivationDto } from './dto/resend-activation.dto';
 
 @ApiTags('Authentication')
-@Controller('api/auth')
+@Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
@@ -59,5 +61,26 @@ export class AuthController {
     );
 
     return { message: 'Mot de passe réinitialisé avec succès' };
+  }
+
+  @Post('activate-account')
+  @ApiOperation({ summary: "Activer le compte d'un utilisateur" })
+  @ApiResponse({
+    status: 400,
+    description: "Ce compte n'est pas en attente d'activation",
+  })
+  async activateAccount(@Body() activateAccountDto: ActivateAccountDto) {
+    await this.authService.activateAccount(
+      activateAccountDto.token,
+      activateAccountDto.password,
+    );
+  }
+
+  @Post('resend-activation')
+  @ApiOperation({
+    summary: "Renvoyer le mail d'activation pour un compte précis.",
+  })
+  async resendActivation(@Body() resendActivation: ResendActivationDto) {
+    await this.authService.resendActivation(resendActivation.email);
   }
 }

@@ -8,11 +8,13 @@ import {
   Param,
   Post,
   Put,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiBody,
+  ApiForbiddenResponse,
   ApiOperation,
   ApiResponse,
   ApiTags,
@@ -33,6 +35,9 @@ import {
   ApiCrudErrorResponses,
   ApiUuidParam,
 } from '../decorators/api-common-response.decorator';
+import { ApiReponsePaginee } from '../common/swagger';
+import { RechercheCompanyDto } from './dto/recherche.company.dto';
+import { ResultatPagine } from '../common/pagination';
 
 /**
  * Gère le cycle de vie des entreprises (création, consultation, mise à jour,
@@ -93,20 +98,44 @@ export class CompanyController {
   )
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
-    summary: 'Lister les entreprises',
+    summary: 'Lister et rechercher les entreprises (paginé)',
+    description: `
+  Liste paginée et filtrable des entreprises.
+  
+  **Filtres combinables (ET)** :
+  - \`q\` : recherche libre dans nom, description et personne de contact
+  - \`id\`, \`userId\`, \`country_code\` : filtres exacts
+  - \`company_name\`, \`company_description\`, \`contact_person\` : recherche "contient" (sans casse)
+  - \`isPartner\` : true/false
+  - \`recruitment_status\` : statut de recrutement (enum)
+  - \`minStudentLevel\` : niveau minimum requis (enum)
+  - \`statut\` : filtre exact sur le statut
+  
+  **Entreprises supprimées** :
+  - Exclues par défaut
+  - \`inclureSupprimes=true\` ou \`statut=SUPPRIME\` les révèle
+  - Réservé aux rôles **ADMIN**, **MANAGER** et **SUPERADMIN** (403 sinon)
+    `,
+  })
+  @ApiReponsePaginee(Company, "Page d'entreprises avec métadonnées")
+  @ApiForbiddenResponse({
     description:
-      'Retourne la liste de toutes les entreprises enregistrées. ' +
-      'Accessible aux rôles ADMIN, SUPERADMIN, MANAGER et ETUDIANT.',
+      'Consultation des entreprises supprimées réservée aux ADMIN, MANAGER et SUPERADMIN',
+    schema: {
+      example: {
+        statusCode: 403,
+        message:
+          'Seuls un admin ou un manager peuvent consulter les entreprises supprimées',
+        error: 'Forbidden',
+      },
+    },
   })
-  @ApiResponse({
-    status: 200,
-    description: 'Liste des entreprises récupérée avec succès',
-    type: Company,
-    isArray: true,
-  })
-  @ApiCrudErrorResponses()
-  findAll(): Promise<Company[]> {
-    return this.companyService.findAll();
+  @ApiCrudErrorResponses({ badRequest: true })
+  findAll(
+    @Query() filtre: RechercheCompanyDto,
+    @GetUser() currentUser: { id: string; email: string; role: RolesEnum },
+  ): Promise<ResultatPagine<Company>> {
+    return this.companyService.findAll(filtre, currentUser);
   }
 
   /**

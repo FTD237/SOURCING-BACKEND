@@ -20,6 +20,7 @@ import {
 import {
   ApiBearerAuth,
   ApiBody,
+  ApiForbiddenResponse,
   ApiOperation,
   ApiResponse,
   ApiTags,
@@ -34,9 +35,11 @@ import {
   ApiUuidParam,
 } from '../decorators/api-common-response.decorator';
 import { Roles } from '../decorators/roles.decorator';
-import { PaginationDto, ResultatPagine } from '../common/pagination';
+import { ResultatPagine } from '../common/pagination';
 // ⚠️ adapte ce chemin au dossier qui contient ton index Swagger
 import { ApiReponsePaginee } from '../common/swagger';
+import { RechercheEtudiantDto } from './dto/recherche.etudiant.dto';
+import { CreateEtudiantsBulkDto } from './dto/create-etudiant-bulk.dto';
 
 /**
  * Gère le cycle de vie des étudiants (création, consultation, mise à jour,
@@ -84,29 +87,46 @@ export class EtudiantController {
     return this.etudiantService.create(dto, currentUser);
   }
 
+  @Post('bulk')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(RolesEnum.ADMIN, RolesEnum.SUPERADMIN, RolesEnum.MANAGER)
+  @ApiOperation({ summary: 'Création d’étudiants en masse (import Excel)' })
+  createBulk(
+    @Body() dto: CreateEtudiantsBulkDto,
+    @GetUser() currentUser: { id: string },
+  ) {
+    return this.etudiantService.createBulk(dto, currentUser);
+  }
+
   /**
    * Liste les étudiants, page par page (du plus récent au plus ancien).
    *
-   * @param pagination - Paramètres de pagination (`page`, `limite`).
    * @returns Une page d'étudiants (`donnees`) et ses métadonnées (`meta`).
    * @throws BadRequestException si les paramètres de pagination sont invalides (400).
+   * @param filtre
+   * @param currentUser
    */
   @Get()
   @Roles(RolesEnum.RH, RolesEnum.MANAGER, RolesEnum.ADMIN, RolesEnum.SUPERADMIN)
   @ApiOperation({
-    summary: 'Lister les étudiants (paginé)',
+    summary: 'Lister et rechercher les étudiants (paginé)',
     description:
-      'Retourne une page des étudiants enregistrés, triés du plus récent au ' +
-      'plus ancien, avec les métadonnées de pagination (total, nombre de ' +
-      'pages, page suivante/précédente). Accessible aux rôles RH, MANAGER, ' +
-      'ADMIN et SUPERADMIN.',
+      'Filtres combinables : q (recherche libre), id, userId, nom, prenom, email, ' +
+      'matricule, promotionId, is_job_seeker, statut. Les étudiants supprimés ' +
+      'sont exclus ; ADMIN, MANAGER et SUPERADMIN peuvent les inclure avec ' +
+      'inclureSupprimes=true.',
   })
   @ApiReponsePaginee(Etudiant)
+  @ApiForbiddenResponse({
+    description:
+      'Consultation des étudiants supprimés réservée aux admins/managers',
+  })
   @ApiCrudErrorResponses({ badRequest: true })
   findAll(
-    @Query() pagination: PaginationDto,
+    @Query() filtre: RechercheEtudiantDto,
+    @GetUser() currentUser: { id: string; email: string; role: RolesEnum },
   ): Promise<ResultatPagine<Etudiant>> {
-    return this.etudiantService.findAll(pagination);
+    return this.etudiantService.findAll(filtre, currentUser);
   }
 
   /**

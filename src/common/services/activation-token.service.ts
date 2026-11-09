@@ -14,6 +14,10 @@ interface GeneratedToken {
 export class ActivationTokenService {
   constructor(private readonly dataSource: DataSource) {}
 
+  private getRepo(manager?: EntityManager) {
+    return (manager ?? this.dataSource.manager).getRepository(ActivationToken);
+  }
+
   /**
    * Génère un token brut (envoyé par email) et son hash (stocké en base).
    * Ne persiste rien — à utiliser avec createAndSave() ou dans une transaction existante.
@@ -35,7 +39,7 @@ export class ActivationTokenService {
   /**
    * Génère et persiste un token pour un user donné.
    * Accepte un EntityManager optionnel pour s'insérer dans une transaction existante
-   * (ex: création d'étudiant dans un queryRunner).
+   * (ex : création d'étudiant dans un queryRunner).
    */
   async createAndSave(
     userId: string,
@@ -55,7 +59,7 @@ export class ActivationTokenService {
   }
 
   /**
-   * Vérifie un token reçu et retourne le userId associé si valide.
+   * Vérifie un token reçu et retourne l'userId associé si valide.
    * Marque le token comme utilisé.
    */
   async consume(rawToken: string, manager?: EntityManager): Promise<string> {
@@ -77,9 +81,26 @@ export class ActivationTokenService {
         'Ce lien a expiré, veuillez en demander un nouveau',
       );
 
-    await repo.update(activationToken.id, { used: true });
+    // Marquage atomique : si deux requêtes utilisent le même lien en même temps
+    // une seule obtient affected = 1
+    const resultat = await repo.update(
+      { id: activationToken.id, used: false },
+      { used: true },
+    );
+    if (!resultat.affected)
+      ExceptionFactory.notFound("Lien d'activation invalide ou déjà utilisé");
 
     return activationToken.userId;
+  }
+
+  /**
+   * @description Invalide les tokens encore valides d'un utilisateur
+   * (utilisé avant d'en émettre un nouveau, pour qu'un seul lien reste actif).
+   * @param userId
+   * @param manager
+   */
+  async invalidateAll(userId: string, manager?: EntityManager): Promise<void> {
+    await this.getRepo(manager).update({ userId, used: false }, { used: true });
   }
 
   buildActivationLink(rawToken: string): string {

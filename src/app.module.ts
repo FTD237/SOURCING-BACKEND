@@ -19,9 +19,14 @@ import { EtudiantSkillModule } from './etudiant-skill/etudiant-skill.module';
 import { NotificationModule } from './notifications/notification.module';
 import { buildDatabaseOptions, getAppEnv } from './config/database.config';
 import { EvaluationModule } from './evaluation/evaluation.module';
+import { StatisticsModule } from './statistics/statistics.module';
+import { ScheduleModule } from '@nestjs/schedule';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 
 @Module({
   imports: [
+    ScheduleModule.forRoot(),
+    EventEmitterModule.forRoot(),
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: `.env.${getAppEnv()}`,
@@ -71,6 +76,7 @@ import { EvaluationModule } from './evaluation/evaluation.module';
     EtudiantSkillModule,
     NotificationModule,
     EvaluationModule,
+    StatisticsModule,
   ],
 })
 export class AppModule {}

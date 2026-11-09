@@ -18,7 +18,7 @@ export interface CreateUserWithActivationParams {
   prenom: string;
   roleId: string;
   createdBy: string;
-  /** Nom de l'entité pour les messages d'erreur (ex: 'Company', 'Etudiant') */
+  /** Nom de l'entité pour les messages d'erreur (ex : 'Company', 'Etudiant') */
   contextEntity: string;
 }
 
@@ -30,12 +30,12 @@ export interface CreateUserWithActivationResult<TEntity> {
 
 /**
  * Regroupe la logique commune à la création de tout compte utilisateur
- * accompagné d'une entité métier (Company, Etudiant, ...) :
+ * accompagné d'une entité métier (Company, Etudiant, etc) :
  * génération du mot de passe, transaction, token d'activation, envoi d'email.
  *
- * Les services métier (CompanyService, EtudiantService, ...) restent
+ * Les services métier (CompanyService, EtudiantService, etc) restent
  * responsables uniquement de : la vérification du rôle attendu et la
- * création de leur entité spécifique via le callback `createBusinessEntity`.
+ * création de leur entité spécifique via le callback `createBusinessEntity'.
  */
 @Injectable()
 export class AccountCreationService {
